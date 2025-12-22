@@ -23,10 +23,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 const extensionRoutes = require('./routes/extensions');
 const customerRoutes = require('./routes/customers');
 const milkEntryRoutes = require('./routes/milkEntries');
+const itemRoutes = require('./routes/items');
 
 app.use('/api/extensions', extensionRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/milk-entries', milkEntryRoutes);
+app.use('/api/items', itemRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

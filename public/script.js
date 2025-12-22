@@ -1,5 +1,6 @@
-const API_BASE = '/api/milk-entries';
+// Use different API based on page type
 const pageType = document.body.dataset.page || 'general';
+const API_BASE = pageType === 'invoice' ? '/api/milk-entries' : '/api/items';
 
 const form = document.getElementById('item-form');
 const itemList = document.getElementById('item-list');
