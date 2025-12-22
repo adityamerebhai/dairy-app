@@ -311,24 +311,17 @@ if (document.body.dataset.page === 'extension') {
               body: JSON.stringify({ date: today, cow, buffalo }),
             });
             if (!res.ok) {
-              if (res.status === 409) {
-                // Entry exists, update it instead
-                const updateRes = await fetch(`/api/milk-entries/customer/${customer._id}/date/${today}`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ cow, buffalo }),
-                });
-                if (!updateRes.ok) throw new Error('Update failed');
-              } else {
-                throw new Error('Save failed');
-              }
+              const errorData = await res.json().catch(() => ({}));
+              throw new Error(errorData.error || 'Save failed');
             }
-            showToast('Milk entry saved!');
+            // Backend returns 201 for create, 200 for update
+            const isUpdate = res.status === 200;
+            showToast(isUpdate ? 'Milk entry updated!' : 'Milk entry saved!');
             cowInput.value = '';
             buffaloInput.value = '';
           } catch (err) {
             console.error(err);
-            showToast('Could not save milk entry');
+            showToast(err.message || 'Could not save milk entry');
           }
         });
 

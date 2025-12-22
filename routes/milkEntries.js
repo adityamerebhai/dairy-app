@@ -40,6 +40,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/milk-entries/customer/:customerId - add milk entry for a customer (date, cow, buffalo)
+// Uses upsert to update existing entry or create new one
 router.post('/customer/:customerId', async (req, res) => {
   try {
     const { customerId } = req.params;
@@ -54,23 +55,30 @@ router.post('/customer/:customerId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid date' });
     }
 
-    const entry = new MilkEntry({
+    // Check if entry already exists
+    const existingEntry = await MilkEntry.findOne({
       customerId,
       date: normalizedDate,
-      cow,
-      buffalo,
     });
 
-    const saved = await entry.save();
-    res.status(201).json(saved);
+    // Use findOneAndUpdate with upsert to create or update
+    const entry = await MilkEntry.findOneAndUpdate(
+      { customerId, date: normalizedDate },
+      { customerId, date: normalizedDate, cow, buffalo },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      }
+    );
+
+    // Return 201 for create, 200 for update
+    const statusCode = existingEntry ? 200 : 201;
+    res.status(statusCode).json(entry);
   } catch (err) {
     console.error(err);
-    if (err.code === 11000) {
-      return res
-        .status(409)
-        .json({ error: 'Milk entry for this customer and date already exists' });
-    }
-    res.status(400).json({ error: 'Failed to create milk entry', details: err.message });
+    res.status(400).json({ error: 'Failed to save milk entry', details: err.message });
   }
 });
 
