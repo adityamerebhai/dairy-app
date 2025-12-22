@@ -1,4 +1,4 @@
-const API_BASE = '/api/items';
+const API_BASE = '/api/milk-entries';
 const pageType = document.body.dataset.page || 'general';
 
 const form = document.getElementById('item-form');
