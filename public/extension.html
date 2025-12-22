@@ -22,8 +22,18 @@
         <h2>Extensions</h2>
         <div class="form">
           <div class="field">
+            <label for="extension-name-input">Add New Extension</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input id="extension-name-input" type="text" placeholder="Enter extension name (e.g. Raj Nagar)" style="flex: 1;" />
+              <button id="add-extension-btn" class="btn primary-btn" type="button">
+                Add Extension
+              </button>
+            </div>
+          </div>
+          <div class="field">
             <label for="extension-select">Select Extension</label>
             <select id="extension-select">
+              <option value="">-- Select Extension --</option>
               <!-- Options loaded via JavaScript from /api/extensions -->
             </select>
           </div>
