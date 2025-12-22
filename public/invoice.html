@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Milk Invoice</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="invoice">
+    <header class="topbar no-print">
+      <h1 class="app-title">Project2 Dashboard</h1>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Dashboard</a>
+        <a href="extension.html" class="nav-link">Extensions</a>
+        <a href="invoice.html" class="nav-link nav-link-active">Invoices</a>
+      </nav>
+    </header>
+
+    <main class="invoice-shell">
+      <section class="invoice-card">
+        <header class="invoice-header">
+          <div>
+            <h1 class="invoice-title">Milk Invoice</h1>
+            <p class="invoice-subtitle">Customer-wise daily milk record</p>
+          </div>
+          <div class="invoice-meta-block">
+            <p><span>Generated:</span> <span id="invoice-generated-date"></span></p>
+          </div>
+        </header>
+
+        <!-- Customer details -->
+        <section class="invoice-section invoice-customer">
+          <h2>Customer Details</h2>
+          <div class="invoice-customer-grid">
+            <div>
+              <div class="label-pill">Name</div>
+              <div id="invoice-customer-name" class="value-strong">—</div>
+            </div>
+            <div>
+              <div class="label-pill">Phone</div>
+              <div id="invoice-customer-phone" class="value-muted">—</div>
+            </div>
+            <div class="invoice-customer-address">
+              <div class="label-pill">Address</div>
+              <div id="invoice-customer-address" class="value-muted">—</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Date-wise milk table -->
+        <section class="invoice-section">
+          <div class="invoice-section-header">
+            <h2>Milk Entries</h2>
+          </div>
+
+          <div class="invoice-table-wrapper">
+            <table class="invoice-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Cow (L)</th>
+                  <th>Buffalo (L)</th>
+                </tr>
+              </thead>
+              <tbody id="invoice-rows">
+                <!-- Rows will be injected via JavaScript using milk entries
+                     from /api/milk-entries/customer/:customerId -->
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th>Total</th>
+                  <th id="invoice-total-cow">0</th>
+                  <th id="invoice-total-buffalo">0</th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+
+        <footer class="invoice-footer no-print">
+          <button id="invoice-excel-btn" class="btn ghost-btn" type="button">
+            Download Excel
+          </button>
+          <button id="invoice-print-btn" class="btn primary-btn" type="button">
+            Print Invoice
+          </button>
+        </footer>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+  </html>
+
+

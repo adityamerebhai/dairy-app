@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Extensions & Customers</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="extension">
+    <header class="topbar">
+      <h1 class="app-title">Project2 Dashboard</h1>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Dashboard</a>
+        <a href="extension.html" class="nav-link nav-link-active">Extensions</a>
+        <a href="invoice.html" class="nav-link">Invoices</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <!-- Extension selector + actions -->
+      <section class="card">
+        <h2>Extensions</h2>
+        <div class="form">
+          <div class="field">
+            <label for="extension-select">Select Extension</label>
+            <select id="extension-select">
+              <!-- Options loaded via JavaScript from /api/extensions -->
+            </select>
+          </div>
+          <div class="field" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <button id="refresh-customers-btn" class="btn ghost-btn" type="button">
+              Refresh Customers
+            </button>
+            <button id="add-customer-btn" class="btn primary-btn" type="button">
+              Add Customer
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Customers in selected extension -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Customers in Extension</h2>
+        </div>
+        <p id="no-extension-selected" class="empty-state">
+          Select an extension to see its customers.
+        </p>
+        <ul id="customer-list" class="item-list">
+          <!-- Each customer row is rendered via JavaScript and includes:
+               - Name
+               - Cow input
+               - Buffalo input
+               - Save button (saves milk entry for current date)
+               - Edit button (edit customer details)
+               - Invoice button (go to invoice view for this customer)
+          -->
+        </ul>
+      </section>
+    </main>
+
+    <!-- Add / Edit Customer modal -->
+    <div
+      id="customer-modal-backdrop"
+      style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 40; align-items: center; justify-content: center; padding: 1rem;"
+    >
+      <div class="card" style="max-width: 420px; width: 100%; margin: 0 auto;">
+        <h2 id="customer-modal-title">Add Customer</h2>
+        <form id="customer-form" class="form">
+          <input type="hidden" id="customer-id" name="customerId" />
+          <div class="field">
+            <label for="customer-name">Name</label>
+            <input id="customer-name" name="name" type="text" required placeholder="Customer name" />
+          </div>
+          <div class="field">
+            <label for="customer-phone">Phone</label>
+            <input id="customer-phone" name="phone" type="tel" placeholder="Phone number" />
+          </div>
+          <div class="field">
+            <label for="customer-address">Address</label>
+            <textarea
+              id="customer-address"
+              name="address"
+              rows="2"
+              placeholder="Customer address"
+            ></textarea>
+          </div>
+          <div class="field" style="flex-direction: row; justify-content: flex-end; gap: 0.5rem;">
+            <button id="customer-cancel-btn" type="button" class="btn ghost-btn">Cancel</button>
+            <button type="submit" class="btn primary-btn">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+  </body>
+  </html>
+
+
