@@ -78,6 +78,28 @@ router.get('/extension/:extensionId', async (req, res) => {
   }
 });
 
+// GET /api/customers/:id - get single customer by id
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid customer id' });
+    }
+
+    const customer = await Customer.findById(id).populate('extensionId');
+
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    res.json(customer);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch customer' });
+  }
+});
+
 // PUT /api/customers/:id - edit customer details
 router.put('/:id', async (req, res) => {
   try {

@@ -502,16 +502,17 @@ if (document.body.dataset.page === 'extension') {
   loadExtensions();
 }
 
-// Invoice page: Excel download + basic date label
+// Invoice page: Load customer details and all milk entries
 if (document.body.dataset.page === 'invoice') {
   const invoicePrintBtn = document.getElementById('invoice-print-btn');
   const invoiceExcelBtn = document.getElementById('invoice-excel-btn');
   const generatedDateEl = document.getElementById('invoice-generated-date');
-
-  if (generatedDateEl) {
-    const now = new Date();
-    generatedDateEl.textContent = now.toLocaleString();
-  }
+  const invoiceRows = document.getElementById('invoice-rows');
+  const invoiceTotalCow = document.getElementById('invoice-total-cow');
+  const invoiceTotalBuffalo = document.getElementById('invoice-total-buffalo');
+  const invoiceCustomerName = document.getElementById('invoice-customer-name');
+  const invoiceCustomerPhone = document.getElementById('invoice-customer-phone');
+  const invoiceCustomerAddress = document.getElementById('invoice-customer-address');
 
   function getCustomerIdFromQuery() {
     const params = new URLSearchParams(window.location.search);
@@ -520,12 +521,97 @@ if (document.body.dataset.page === 'invoice') {
 
   const customerId = getCustomerIdFromQuery();
 
+  // Format date for display
+  function formatDateForInvoice(dateString) {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // Load customer details
+  async function loadCustomerDetails() {
+    if (!customerId) {
+      invoiceCustomerName.textContent = 'No customer selected';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/customers/${customerId}`);
+      if (!res.ok) throw new Error('Failed to fetch customer');
+      const customer = await res.json();
+
+      invoiceCustomerName.textContent = customer.name || '—';
+      invoiceCustomerPhone.textContent = customer.phone || '—';
+      invoiceCustomerAddress.textContent = customer.address || '—';
+    } catch (err) {
+      console.error(err);
+      invoiceCustomerName.textContent = 'Error loading customer';
+    }
+  }
+
+  // Load all milk entries for customer
+  async function loadMilkEntries() {
+    if (!customerId) {
+      invoiceRows.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem;">No customer selected</td></tr>';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/milk-entries/customer/${customerId}`);
+      if (!res.ok) throw new Error('Failed to fetch milk entries');
+      const entries = await res.json();
+
+      invoiceRows.innerHTML = '';
+
+      if (entries.length === 0) {
+        invoiceRows.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem;">No milk entries found</td></tr>';
+        invoiceTotalCow.textContent = '0';
+        invoiceTotalBuffalo.textContent = '0';
+        return;
+      }
+
+      let totalCow = 0;
+      let totalBuffalo = 0;
+
+      entries.forEach((entry) => {
+        const cow = entry.cow || 0;
+        const buffalo = entry.buffalo || 0;
+        totalCow += cow;
+        totalBuffalo += buffalo;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${formatDateForInvoice(entry.date)}</td>
+          <td>${cow.toFixed(1)}</td>
+          <td>${buffalo.toFixed(1)}</td>
+        `;
+        invoiceRows.appendChild(row);
+      });
+
+      // Update totals
+      invoiceTotalCow.textContent = totalCow.toFixed(1);
+      invoiceTotalBuffalo.textContent = totalBuffalo.toFixed(1);
+    } catch (err) {
+      console.error(err);
+      invoiceRows.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--danger);">Error loading milk entries</td></tr>';
+    }
+  }
+
+  // Set generated date
+  if (generatedDateEl) {
+    const now = new Date();
+    generatedDateEl.textContent = now.toLocaleString();
+  }
+
+  // Print button
   if (invoicePrintBtn) {
     invoicePrintBtn.addEventListener('click', () => {
       window.print();
     });
   }
 
+  // Excel download button
   if (invoiceExcelBtn) {
     invoiceExcelBtn.addEventListener('click', () => {
       if (!customerId) {
@@ -536,4 +622,8 @@ if (document.body.dataset.page === 'invoice') {
       window.location.href = url;
     });
   }
+
+  // Load data on page load
+  loadCustomerDetails();
+  loadMilkEntries();
 }
