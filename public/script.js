@@ -180,6 +180,139 @@ if (itemList) {
   loadItems();
 }
 
+// Dashboard page: Load stats and recent entries
+if (document.body.dataset.page === 'dashboard') {
+  const totalExtensionsEl = document.getElementById('total-extensions');
+  const totalCustomersEl = document.getElementById('total-customers');
+  const totalMilkEntriesEl = document.getElementById('total-milk-entries');
+  const todayMilkEl = document.getElementById('today-milk');
+  const recentEntriesList = document.getElementById('recent-entries-list');
+  const refreshDashboardBtn = document.getElementById('refresh-dashboard-btn');
+
+  function formatDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  async function loadDashboardStats() {
+    try {
+      // Load all stats in parallel
+      const [extensionsRes, customersRes, milkEntriesRes] = await Promise.all([
+        fetch('/api/extensions'),
+        fetch('/api/customers'),
+        fetch('/api/milk-entries'),
+      ]);
+
+      if (!extensionsRes.ok || !customersRes.ok || !milkEntriesRes.ok) {
+        throw new Error('Failed to load stats');
+      }
+
+      const extensions = await extensionsRes.json();
+      const customers = await customersRes.json();
+      const milkEntries = await milkEntriesRes.json();
+
+      // Update stats
+      totalExtensionsEl.textContent = extensions.length;
+      totalCustomersEl.textContent = customers.length;
+      totalMilkEntriesEl.textContent = milkEntries.length;
+
+      // Calculate today's milk
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayEntries = milkEntries.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        entryDate.setHours(0, 0, 0, 0);
+        return entryDate.getTime() === today.getTime();
+      });
+
+      const todayTotal = todayEntries.reduce((sum, entry) => {
+        return sum + (entry.cow || 0) + (entry.buffalo || 0);
+      }, 0);
+
+      todayMilkEl.textContent = todayTotal.toFixed(1);
+    } catch (err) {
+      console.error(err);
+      totalExtensionsEl.textContent = '—';
+      totalCustomersEl.textContent = '—';
+      totalMilkEntriesEl.textContent = '—';
+      todayMilkEl.textContent = '—';
+    }
+  }
+
+  async function loadRecentEntries() {
+    try {
+      const res = await fetch('/api/milk-entries');
+      if (!res.ok) throw new Error('Failed to load entries');
+
+      const entries = await res.json();
+      
+      // Sort by date (most recent first) and take last 10
+      const sorted = entries
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 10);
+
+      recentEntriesList.innerHTML = '';
+
+      if (sorted.length === 0) {
+        recentEntriesList.innerHTML = '<p class="empty-state">No milk entries yet.</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.marginTop = '0.5rem';
+
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <th style="text-align: left; padding: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Date</th>
+          <th style="text-align: left; padding: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Customer</th>
+          <th style="text-align: right; padding: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Cow (L)</th>
+          <th style="text-align: right; padding: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Buffalo (L)</th>
+        </tr>
+      `;
+
+      const tbody = document.createElement('tbody');
+      sorted.forEach((entry) => {
+        // Customer data is populated from the API
+        const customerName = entry.customerId?.name || entry.customerId?._id || 'Unknown';
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid rgba(148, 163, 184, 0.2)';
+        row.innerHTML = `
+          <td style="padding: 0.5rem; font-size: 0.9rem;">${formatDate(entry.date)}</td>
+          <td style="padding: 0.5rem; font-size: 0.9rem;">${customerName}</td>
+          <td style="padding: 0.5rem; text-align: right; font-size: 0.9rem;">${(entry.cow || 0).toFixed(1)}</td>
+          <td style="padding: 0.5rem; text-align: right; font-size: 0.9rem;">${(entry.buffalo || 0).toFixed(1)}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      recentEntriesList.appendChild(table);
+    } catch (err) {
+      console.error(err);
+      recentEntriesList.innerHTML = '<p class="empty-state">Error loading recent entries.</p>';
+    }
+  }
+
+  async function loadDashboard() {
+    await Promise.all([loadDashboardStats(), loadRecentEntries()]);
+  }
+
+  if (refreshDashboardBtn) {
+    refreshDashboardBtn.addEventListener('click', () => {
+      loadDashboard();
+    });
+  }
+
+  // Initial load
+  loadDashboard();
+}
+
 // Extension page: Load extensions, customers, handle modals
 if (document.body.dataset.page === 'extension') {
   const extensionNameInput = document.getElementById('extension-name-input');
