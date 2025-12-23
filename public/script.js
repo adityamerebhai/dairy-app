@@ -346,8 +346,16 @@ if (document.body.dataset.page === 'dashboard') {
   }
 
   if (refreshDashboardBtn) {
-    refreshDashboardBtn.addEventListener('click', () => {
-      loadDashboard();
+    refreshDashboardBtn.addEventListener('click', async () => {
+      setButtonLoading(refreshDashboardBtn, true);
+      try {
+        await loadDashboard();
+        showToast('Dashboard refreshed!');
+      } catch (err) {
+        showToast('Error refreshing dashboard', 'error');
+      } finally {
+        setButtonLoading(refreshDashboardBtn, false);
+      }
     });
   }
 
@@ -645,8 +653,16 @@ if (document.body.dataset.page === 'dashboard') {
 
   // Refresh sales button
   if (refreshSalesBtn) {
-    refreshSalesBtn.addEventListener('click', () => {
-      loadDailySales();
+    refreshSalesBtn.addEventListener('click', async () => {
+      setButtonLoading(refreshSalesBtn, true);
+      try {
+        await loadDailySales();
+        showToast('Daily sales refreshed!');
+      } catch (err) {
+        showToast('Error refreshing daily sales', 'error');
+      } finally {
+        setButtonLoading(refreshSalesBtn, false);
+      }
     });
   }
 
