@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const XLSX = require('xlsx');
 const MilkEntry = require('../models/MilkEntry');
 const Product = require('../models/Product');
+const MilkPrice = require('../models/MilkPrice');
 
 const router = express.Router();
 
@@ -188,18 +189,75 @@ router.get('/customer/:customerId/excel', async (req, res) => {
       return res.status(400).json({ error: 'Invalid customerId' });
     }
 
+    // Fetch milk prices
+    const milkPrices = await MilkPrice.findOne();
+    const cowPrice = milkPrices?.cowPrice || 0;
+    const buffaloPrice = milkPrices?.buffaloPrice || 0;
+
     const entries = await MilkEntry.find({ customerId })
       .populate('customerId')
       .sort({ date: 1 })
       .lean()
       .exec();
 
-    const rows = entries.map((e) => ({
-      Date: e.date ? new Date(e.date).toLocaleDateString() : '',
-      'Cow (L)': e.cow ?? 0,
-      'Buffalo (L)': e.buffalo ?? 0,
-      'Total (L)': (e.cow || 0) + (e.buffalo || 0),
-    }));
+    // Calculate totals
+    let totalCow = 0;
+    let totalBuffalo = 0;
+    let totalCowAmount = 0;
+    let totalBuffaloAmount = 0;
+    let totalProductAmount = 0;
+
+    const rows = entries.map((e) => {
+      const cow = e.cow || 0;
+      const buffalo = e.buffalo || 0;
+      const cowAmount = cow * cowPrice;
+      const buffaloAmount = buffalo * buffaloPrice;
+
+      // Calculate product amount and names
+      let productAmount = 0;
+      let productNames = [];
+      if (e.products && Array.isArray(e.products) && e.products.length > 0) {
+        e.products.forEach((product) => {
+          const cost = product.cost || 0;
+          productAmount += cost;
+          if (product.productName) {
+            productNames.push(`${product.productName} (₹${cost.toFixed(2)})`);
+          }
+        });
+      }
+
+      const rowTotal = cowAmount + buffaloAmount + productAmount;
+
+      // Update totals
+      totalCow += cow;
+      totalBuffalo += buffalo;
+      totalCowAmount += cowAmount;
+      totalBuffaloAmount += buffaloAmount;
+      totalProductAmount += productAmount;
+
+      return {
+        Date: e.date ? new Date(e.date).toLocaleDateString() : '',
+        'Cow (L)': cow,
+        'Buffalo (L)': buffalo,
+        Products: productNames.length > 0 ? productNames.join(', ') : '—',
+        'Cow Amount (₹)': cowAmount.toFixed(2),
+        'Buffalo Amount (₹)': buffaloAmount.toFixed(2),
+        'Product Amount (₹)': productAmount.toFixed(2),
+        'Total Amount (₹)': rowTotal.toFixed(2),
+      };
+    });
+
+    // Add totals row
+    rows.push({
+      Date: 'TOTAL',
+      'Cow (L)': totalCow.toFixed(1),
+      'Buffalo (L)': totalBuffalo.toFixed(1),
+      Products: '—',
+      'Cow Amount (₹)': totalCowAmount.toFixed(2),
+      'Buffalo Amount (₹)': totalBuffaloAmount.toFixed(2),
+      'Product Amount (₹)': totalProductAmount.toFixed(2),
+      'Total Amount (₹)': (totalCowAmount + totalBuffaloAmount + totalProductAmount).toFixed(2),
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
