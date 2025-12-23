@@ -428,9 +428,58 @@ if (document.body.dataset.page === 'dashboard') {
     });
   }
 
+  // Milk Prices Management
+  const cowPriceInput = document.getElementById('cow-price');
+  const buffaloPriceInput = document.getElementById('buffalo-price');
+  const saveMilkPricesBtn = document.getElementById('save-milk-prices-btn');
+
+  async function loadMilkPrices() {
+    try {
+      const res = await fetch('/api/milk-prices');
+      if (res.ok) {
+        const prices = await res.json();
+        if (cowPriceInput) cowPriceInput.value = prices.cowPrice || '';
+        if (buffaloPriceInput) buffaloPriceInput.value = prices.buffaloPrice || '';
+      }
+    } catch (err) {
+      console.error('Failed to load milk prices:', err);
+    }
+  }
+
+  if (saveMilkPricesBtn) {
+    saveMilkPricesBtn.addEventListener('click', async () => {
+      const cowPrice = parseFloat(cowPriceInput?.value);
+      const buffaloPrice = parseFloat(buffaloPriceInput?.value);
+
+      if (isNaN(cowPrice) || cowPrice < 0) {
+        showToast('Please enter a valid cow milk price');
+        return;
+      }
+
+      if (isNaN(buffaloPrice) || buffaloPrice < 0) {
+        showToast('Please enter a valid buffalo milk price');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/milk-prices', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cowPrice, buffaloPrice }),
+        });
+        if (!res.ok) throw new Error('Save failed');
+        showToast('Milk prices saved!');
+      } catch (err) {
+        console.error(err);
+        showToast('Could not save milk prices');
+      }
+    });
+  }
+
   // Initial load
   loadDashboard();
   loadProducts();
+  loadMilkPrices();
 }
 
 // Extension page: Load extensions, customers, handle modals
@@ -844,9 +893,26 @@ if (document.body.dataset.page === 'invoice') {
   const invoiceRows = document.getElementById('invoice-rows');
   const invoiceTotalCow = document.getElementById('invoice-total-cow');
   const invoiceTotalBuffalo = document.getElementById('invoice-total-buffalo');
+  const invoiceTotalCowAmount = document.getElementById('invoice-total-cow-amount');
+  const invoiceTotalBuffaloAmount = document.getElementById('invoice-total-buffalo-amount');
+  const invoiceGrandTotal = document.getElementById('invoice-grand-total');
   const invoiceCustomerName = document.getElementById('invoice-customer-name');
   const invoiceCustomerPhone = document.getElementById('invoice-customer-phone');
   const invoiceCustomerAddress = document.getElementById('invoice-customer-address');
+
+  let milkPrices = { cowPrice: 0, buffaloPrice: 0 };
+
+  // Load milk prices
+  async function loadMilkPrices() {
+    try {
+      const res = await fetch('/api/milk-prices');
+      if (res.ok) {
+        milkPrices = await res.json();
+      }
+    } catch (err) {
+      console.error('Failed to load milk prices:', err);
+    }
+  }
 
   function getCustomerIdFromQuery() {
     const params = new URLSearchParams(window.location.search);
@@ -887,11 +953,14 @@ if (document.body.dataset.page === 'invoice') {
   // Load all milk entries for customer
   async function loadMilkEntries() {
     if (!customerId) {
-      invoiceRows.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem;">No customer selected</td></tr>';
+      invoiceRows.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No customer selected</td></tr>';
       return;
     }
 
     try {
+      // Load milk prices first
+      await loadMilkPrices();
+
       const res = await fetch(`/api/milk-entries/customer/${customerId}`);
       if (!res.ok) throw new Error('Failed to fetch milk entries');
       const entries = await res.json();
@@ -901,14 +970,19 @@ if (document.body.dataset.page === 'invoice') {
       invoiceRows.innerHTML = '';
 
       if (entries.length === 0) {
-        invoiceRows.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem;">No milk entries found</td></tr>';
+        invoiceRows.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No milk entries found</td></tr>';
         invoiceTotalCow.textContent = '0';
         invoiceTotalBuffalo.textContent = '0';
+        if (invoiceTotalCowAmount) invoiceTotalCowAmount.textContent = '₹0.00';
+        if (invoiceTotalBuffaloAmount) invoiceTotalBuffaloAmount.textContent = '₹0.00';
+        if (invoiceGrandTotal) invoiceGrandTotal.textContent = '₹0.00';
         return;
       }
 
       let totalCow = 0;
       let totalBuffalo = 0;
+      let totalCowAmount = 0;
+      let totalBuffaloAmount = 0;
 
       // Sort entries by date to ensure chronological order
       const sortedEntries = [...entries].sort((a, b) => {
@@ -923,11 +997,22 @@ if (document.body.dataset.page === 'invoice') {
         totalCow += cow;
         totalBuffalo += buffalo;
 
+        // Calculate amounts using milk prices
+        const cowAmount = cow * (milkPrices.cowPrice || 0);
+        const buffaloAmount = buffalo * (milkPrices.buffaloPrice || 0);
+        const rowTotal = cowAmount + buffaloAmount;
+
+        totalCowAmount += cowAmount;
+        totalBuffaloAmount += buffaloAmount;
+
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${formatDateForInvoice(entry.date)}</td>
           <td>${cow.toFixed(1)}</td>
           <td>${buffalo.toFixed(1)}</td>
+          <td>₹${cowAmount.toFixed(2)}</td>
+          <td>₹${buffaloAmount.toFixed(2)}</td>
+          <td>₹${rowTotal.toFixed(2)}</td>
         `;
         invoiceRows.appendChild(row);
       });
@@ -935,9 +1020,12 @@ if (document.body.dataset.page === 'invoice') {
       // Update totals
       invoiceTotalCow.textContent = totalCow.toFixed(1);
       invoiceTotalBuffalo.textContent = totalBuffalo.toFixed(1);
+      if (invoiceTotalCowAmount) invoiceTotalCowAmount.textContent = `₹${totalCowAmount.toFixed(2)}`;
+      if (invoiceTotalBuffaloAmount) invoiceTotalBuffaloAmount.textContent = `₹${totalBuffaloAmount.toFixed(2)}`;
+      if (invoiceGrandTotal) invoiceGrandTotal.textContent = `₹${(totalCowAmount + totalBuffaloAmount).toFixed(2)}`;
     } catch (err) {
       console.error('Error loading milk entries:', err);
-      invoiceRows.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--danger);">Error loading milk entries</td></tr>';
+      invoiceRows.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--danger);">Error loading milk entries</td></tr>';
     }
   }
 
@@ -967,6 +1055,7 @@ if (document.body.dataset.page === 'invoice') {
   }
 
   // Load data on page load
+  loadMilkPrices();
   loadCustomerDetails();
   loadMilkEntries();
 }

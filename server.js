@@ -25,12 +25,14 @@ const customerRoutes = require('./routes/customers');
 const milkEntryRoutes = require('./routes/milkEntries');
 const itemRoutes = require('./routes/items');
 const productRoutes = require('./routes/products');
+const milkPriceRoutes = require('./routes/milkPrices');
 
 app.use('/api/extensions', extensionRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/milk-entries', milkEntryRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/milk-prices', milkPriceRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

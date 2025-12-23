@@ -52,6 +52,27 @@
           </div>
         </section>
 
+        <!-- Milk Prices -->
+        <section class="card">
+          <h2>Milk Prices (per Liter)</h2>
+          <div class="form" style="margin-top: 1rem;">
+            <div class="field" style="flex-direction: row; gap: 1rem; align-items: flex-end;">
+              <div style="flex: 1;">
+                <label for="cow-price">Cow Milk Price (₹)</label>
+                <input id="cow-price" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div style="flex: 1;">
+                <label for="buffalo-price">Buffalo Milk Price (₹)</label>
+                <input id="buffalo-price" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <button id="save-milk-prices-btn" class="btn primary-btn" type="button">Save Prices</button>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+              These prices will be used to calculate invoice totals.
+            </p>
+          </div>
+        </section>
+
         <!-- Products Management -->
         <section class="card">
           <h2>Products Management</h2>
