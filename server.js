@@ -24,11 +24,13 @@ const extensionRoutes = require('./routes/extensions');
 const customerRoutes = require('./routes/customers');
 const milkEntryRoutes = require('./routes/milkEntries');
 const itemRoutes = require('./routes/items');
+const productRoutes = require('./routes/products');
 
 app.use('/api/extensions', extensionRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/milk-entries', milkEntryRoutes);
 app.use('/api/items', itemRoutes);
+app.use('/api/products', productRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -309,8 +309,128 @@ if (document.body.dataset.page === 'dashboard') {
     });
   }
 
+  // Products Management
+  const productNameInput = document.getElementById('product-name');
+  const productCostInput = document.getElementById('product-cost');
+  const addProductBtn = document.getElementById('add-product-btn');
+  const productsList = document.getElementById('products-list');
+
+  async function loadProducts() {
+    try {
+      const res = await fetch('/api/products');
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const products = await res.json();
+
+      productsList.innerHTML = '';
+
+      if (products.length === 0) {
+        productsList.innerHTML = '<p class="empty-state">No products yet. Add your first product above.</p>';
+        return;
+      }
+
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.marginTop = '0.5rem';
+
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <th style="text-align: left; padding: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Product Name</th>
+          <th style="text-align: right; padding: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Cost</th>
+          <th style="text-align: center; padding: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Actions</th>
+        </tr>
+      `;
+
+      const tbody = document.createElement('tbody');
+      products.forEach((product) => {
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid rgba(148, 163, 184, 0.2)';
+        row.innerHTML = `
+          <td style="padding: 0.5rem; font-size: 0.9rem;">${product.name}</td>
+          <td style="padding: 0.5rem; text-align: right; font-size: 0.9rem;">₹${(product.cost || 0).toFixed(2)}</td>
+          <td style="padding: 0.5rem; text-align: center;">
+            <button class="btn ghost-btn delete-product-btn" data-product-id="${product._id}" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      productsList.appendChild(table);
+
+      // Add delete event listeners
+      document.querySelectorAll('.delete-product-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const productId = btn.dataset.productId;
+          if (!confirm('Delete this product?')) return;
+
+          try {
+            const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Delete failed');
+            showToast('Product deleted');
+            loadProducts();
+          } catch (err) {
+            console.error(err);
+            showToast('Could not delete product');
+          }
+        });
+      });
+    } catch (err) {
+      console.error(err);
+      productsList.innerHTML = '<p class="empty-state">Error loading products.</p>';
+    }
+  }
+
+  if (addProductBtn) {
+    addProductBtn.addEventListener('click', async () => {
+      const name = productNameInput?.value?.trim();
+      const cost = parseFloat(productCostInput?.value);
+
+      if (!name) {
+        showToast('Please enter product name');
+        return;
+      }
+
+      if (isNaN(cost) || cost < 0) {
+        showToast('Please enter a valid cost');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, cost }),
+        });
+        if (!res.ok) throw new Error('Create failed');
+        productNameInput.value = '';
+        productCostInput.value = '';
+        showToast('Product added!');
+        loadProducts();
+      } catch (err) {
+        console.error(err);
+        showToast('Could not add product');
+      }
+    });
+  }
+
+  // Allow Enter key to add product
+  if (productNameInput && productCostInput) {
+    [productNameInput, productCostInput].forEach((input) => {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addProductBtn?.click();
+        }
+      });
+    });
+  }
+
   // Initial load
   loadDashboard();
+  loadProducts();
 }
 
 // Extension page: Load extensions, customers, handle modals
@@ -327,6 +447,20 @@ if (document.body.dataset.page === 'extension') {
   const noExtensionSelected = document.getElementById('no-extension-selected');
 
   let currentExtensionId = null;
+  let allProducts = []; // Cache products
+
+  // Load all products once
+  async function loadAllProducts() {
+    try {
+      const res = await fetch('/api/products');
+      if (res.ok) {
+        allProducts = await res.json();
+      }
+    } catch (err) {
+      console.error('Failed to load products:', err);
+      allProducts = [];
+    }
+  }
 
   // Load extensions into dropdown
   async function loadExtensions() {
@@ -413,10 +547,30 @@ if (document.body.dataset.page === 'extension') {
         buffaloInput.style.width = '80px';
         buffaloInput.style.padding = '0.4rem';
 
+        const productLabel = document.createElement('label');
+        productLabel.textContent = 'Product:';
+        productLabel.style.fontSize = '0.8rem';
+        const productSelect = document.createElement('select');
+        productSelect.style.width = '120px';
+        productSelect.style.padding = '0.4rem';
+        productSelect.style.fontSize = '0.85rem';
+        productSelect.innerHTML = '<option value="">-- Select --</option>';
+        productSelect.dataset.customerId = customer._id;
+
+        // Populate products dropdown from cached products
+        allProducts.forEach((product) => {
+          const option = document.createElement('option');
+          option.value = product._id;
+          option.textContent = `${product.name} (₹${product.cost.toFixed(2)})`;
+          productSelect.appendChild(option);
+        });
+
         inputsDiv.appendChild(cowLabel);
         inputsDiv.appendChild(cowInput);
         inputsDiv.appendChild(buffaloLabel);
         inputsDiv.appendChild(buffaloInput);
+        inputsDiv.appendChild(productLabel);
+        inputsDiv.appendChild(productSelect);
 
         main.appendChild(nameDiv);
         main.appendChild(inputsDiv);
@@ -632,6 +786,7 @@ if (document.body.dataset.page === 'extension') {
   }
 
   // Initial load
+  loadAllProducts();
   loadExtensions();
 }
 

@@ -50,6 +50,27 @@
         </div>
       </section>
 
+      <!-- Products Management -->
+      <section class="card">
+        <h2>Products Management</h2>
+        <div class="form" style="margin-top: 1rem;">
+          <div class="field" style="flex-direction: row; gap: 0.5rem; align-items: flex-end;">
+            <div style="flex: 1;">
+              <label for="product-name">Product Name</label>
+              <input id="product-name" type="text" placeholder="Enter product name" />
+            </div>
+            <div style="flex: 1;">
+              <label for="product-cost">Cost</label>
+              <input id="product-cost" type="number" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <button id="add-product-btn" class="btn primary-btn" type="button">Add Product</button>
+          </div>
+        </div>
+        <div id="products-list" style="margin-top: 1rem;">
+          <p class="empty-state">Loading products...</p>
+        </div>
+      </section>
+
       <!-- Recent Milk Entries -->
       <section class="card">
         <div class="card-header">
