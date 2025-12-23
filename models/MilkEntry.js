@@ -25,6 +25,23 @@ const MilkEntrySchema = new Schema(
       default: 0,
       min: 0,
     },
+    products: [
+      {
+        productId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Product',
+        },
+        productName: {
+          type: String,
+          trim: true,
+        },
+        cost: {
+          type: Number,
+          min: 0,
+          default: 0,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

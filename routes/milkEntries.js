@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const XLSX = require('xlsx');
 const MilkEntry = require('../models/MilkEntry');
+const Product = require('../models/Product');
 
 const router = express.Router();
 
@@ -39,12 +40,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/milk-entries/customer/:customerId - add milk entry for a customer (date, cow, buffalo)
+// POST /api/milk-entries/customer/:customerId - add milk entry for a customer (date, cow, buffalo, products)
 // Uses upsert to update existing entry or create new one
 router.post('/customer/:customerId', async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { date, cow, buffalo } = req.body;
+    const { date, cow, buffalo, productId } = req.body;
 
     if (!isValidObjectId(customerId)) {
       return res.status(400).json({ error: 'Invalid customerId' });
@@ -53,6 +54,21 @@ router.post('/customer/:customerId', async (req, res) => {
     const normalizedDate = normalizeDate(date);
     if (!normalizedDate) {
       return res.status(400).json({ error: 'Invalid date' });
+    }
+
+    // Prepare products array
+    let products = [];
+    if (productId && isValidObjectId(productId)) {
+      const product = await Product.findById(productId);
+      if (product) {
+        products = [
+          {
+            productId: product._id,
+            productName: product.name,
+            cost: product.cost,
+          },
+        ];
+      }
     }
 
     // Check if entry already exists
@@ -64,7 +80,7 @@ router.post('/customer/:customerId', async (req, res) => {
     // Use findOneAndUpdate with upsert to create or update
     const entry = await MilkEntry.findOneAndUpdate(
       { customerId, date: normalizedDate },
-      { customerId, date: normalizedDate, cow, buffalo },
+      { customerId, date: normalizedDate, cow, buffalo, products },
       {
         new: true,
         upsert: true,
@@ -86,7 +102,7 @@ router.post('/customer/:customerId', async (req, res) => {
 router.put('/customer/:customerId/date/:date', async (req, res) => {
   try {
     const { customerId, date } = req.params;
-    const { cow, buffalo } = req.body;
+    const { cow, buffalo, productId } = req.body;
 
     if (!isValidObjectId(customerId)) {
       return res.status(400).json({ error: 'Invalid customerId' });
@@ -97,9 +113,24 @@ router.put('/customer/:customerId/date/:date', async (req, res) => {
       return res.status(400).json({ error: 'Invalid date' });
     }
 
+    // Prepare products array
+    let products = [];
+    if (productId && isValidObjectId(productId)) {
+      const product = await Product.findById(productId);
+      if (product) {
+        products = [
+          {
+            productId: product._id,
+            productName: product.name,
+            cost: product.cost,
+          },
+        ];
+      }
+    }
+
     const entry = await MilkEntry.findOneAndUpdate(
       { customerId, date: normalizedDate },
-      { cow, buffalo },
+      { cow, buffalo, products },
       { new: true }
     );
 
