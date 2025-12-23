@@ -605,6 +605,461 @@ select option:hover {
   }
 }
 
+/* ============================================
+   PROFESSIONAL ANIMATIONS & TRANSITIONS
+   ============================================ */
+
+/* Smooth page transitions */
+body {
+  animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Card hover animations */
+.card {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+}
+
+/* Stat card animations */
+.stat-card {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideUp 0.5s ease-out backwards;
+}
+
+.stat-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.stat-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.stat-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 45px rgba(22, 163, 74, 0.25);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Button enhanced animations */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(22, 163, 74, 0.4);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Input focus animations */
+input[type='text'],
+input[type='number'],
+input[type='tel'],
+textarea,
+select {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input[type='text']:focus,
+input[type='number']:focus,
+input[type='tel']:focus,
+textarea:focus,
+select:focus {
+  transform: scale(1.01);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15), 0 4px 12px rgba(22, 163, 74, 0.1);
+}
+
+/* Modal animations */
+#customer-modal-backdrop {
+  animation: fadeInBackdrop 0.3s ease-out;
+  backdrop-filter: blur(8px);
+}
+
+#customer-modal-backdrop[style*='display: none'] {
+  animation: fadeOutBackdrop 0.3s ease-out;
+}
+
+#customer-modal-backdrop .card {
+  animation: slideInModal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes fadeInBackdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutBackdrop {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideInModal {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Toast enhanced animations */
+.toast {
+  animation: slideUpToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.toast-visible {
+  animation: slideUpToast 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideUpToast {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(120%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* Item row animations */
+.item-row {
+  animation: slideInRow 0.4s ease-out backwards;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.item-row:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.item-row:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.item-row:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.item-row:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.item-row:nth-child(5) {
+  animation-delay: 0.25s;
+}
+
+.item-row:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+  border-color: rgba(22, 163, 74, 0.4);
+}
+
+@keyframes slideInRow {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Table row animations */
+.invoice-table tbody tr {
+  animation: fadeInRow 0.5s ease-out backwards;
+  transition: background-color 0.2s ease;
+}
+
+.invoice-table tbody tr:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.invoice-table tbody tr:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.invoice-table tbody tr:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.invoice-table tbody tr:hover {
+  background-color: rgba(22, 163, 74, 0.05);
+  transform: scale(1.01);
+}
+
+@keyframes fadeInRow {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(22, 163, 74, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Skeleton loader */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Nav link hover animation */
+.nav-link {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after,
+.nav-link-active::after {
+  width: 100%;
+}
+
+/* Icon button pulse on hover */
+.icon-btn:hover {
+  animation: pulse 0.6s ease-in-out;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Form field label animation */
+.field label {
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.field input:focus + label,
+.field textarea:focus + label,
+.field select:focus + label {
+  color: var(--accent);
+}
+
+/* Dashboard content fade in */
+.dashboard-content > .card {
+  animation: fadeInUp 0.6s ease-out backwards;
+}
+
+.dashboard-content > .card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.dashboard-content > .card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dashboard-content > .card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.dashboard-content > .card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stat value counter animation */
+.stat-value {
+  animation: countUp 1s ease-out;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Product/item list stagger animation */
+#products-list table tbody tr,
+.item-list .item-row {
+  animation: staggerFadeIn 0.5s ease-out backwards;
+}
+
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Success checkmark animation */
+.success-checkmark {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  position: relative;
+  animation: checkmarkPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.success-checkmark::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+}
+
+@keyframes checkmarkPop {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Print-friendly styles */
 @media print {
   body {
@@ -623,5 +1078,11 @@ select option:hover {
   .invoice-card {
     box-shadow: none;
     border-radius: 0;
+  }
+
+  /* Disable animations in print */
+  * {
+    animation: none !important;
+    transition: none !important;
   }
 }

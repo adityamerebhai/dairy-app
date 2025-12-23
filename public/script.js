@@ -8,13 +8,53 @@ const emptyState = document.getElementById('empty-state');
 const refreshBtn = document.getElementById('refresh-btn');
 const toast = document.getElementById('toast');
 
-function showToast(message) {
+function showToast(message, type = 'success') {
   if (!toast) return;
   toast.textContent = message;
+  toast.className = 'toast';
+  if (type === 'error') {
+    toast.style.borderColor = 'rgba(185, 28, 28, 0.8)';
+    toast.style.background = 'radial-gradient(circle at top left, rgba(185, 28, 28, 0.1), #fef2f2)';
+    toast.style.color = '#991b1b';
+  } else {
+    toast.style.borderColor = 'rgba(34, 197, 94, 0.8)';
+    toast.style.background = 'radial-gradient(circle at top left, var(--accent-soft), #ecfdf3)';
+    toast.style.color = '#14532d';
+  }
   toast.classList.add('toast-visible');
   setTimeout(() => {
     toast.classList.remove('toast-visible');
-  }, 2200);
+  }, 3000);
+}
+
+// Helper function to show loading state on button
+function setButtonLoading(button, isLoading) {
+  if (!button) return;
+  if (isLoading) {
+    button.disabled = true;
+    button.dataset.originalText = button.textContent;
+    button.innerHTML = '<span class="loading-spinner"></span> Loading...';
+  } else {
+    button.disabled = false;
+    button.textContent = button.dataset.originalText || button.textContent;
+  }
+}
+
+// Helper function to show/hide modal with animation
+function showModal(modal) {
+  if (!modal) return;
+  modal.style.display = 'flex';
+  // Force reflow to trigger animation
+  void modal.offsetWidth;
+  modal.style.opacity = '1';
+}
+
+function hideModal(modal) {
+  if (!modal) return;
+  modal.style.opacity = '0';
+  setTimeout(() => {
+    modal.style.display = 'none';
+  }, 300);
 }
 
 function formatAmount(amount) {
@@ -776,7 +816,7 @@ if (document.body.dataset.page === 'extension') {
           document.getElementById('customer-phone').value = customer.phone || '';
           document.getElementById('customer-address').value = customer.address || '';
           document.getElementById('customer-modal-title').textContent = 'Edit Customer';
-          customerModal.style.display = 'flex';
+          showModal(customerModal);
         });
 
         const invoiceBtn = document.createElement('button');
@@ -861,7 +901,7 @@ if (document.body.dataset.page === 'extension') {
       customerForm.reset();
       document.getElementById('customer-id').value = '';
       document.getElementById('customer-modal-title').textContent = 'Add Customer';
-      customerModal.style.display = 'flex';
+      showModal(customerModal);
     });
   }
 
@@ -900,7 +940,7 @@ if (document.body.dataset.page === 'extension') {
           if (!res.ok) throw new Error('Create failed');
           showToast('Customer added!');
         }
-        customerModal.style.display = 'none';
+        hideModal(customerModal);
         customerForm.reset();
         await loadCustomers();
       } catch (err) {
@@ -913,7 +953,7 @@ if (document.body.dataset.page === 'extension') {
   // Customer modal cancel
   if (customerCancelBtn) {
     customerCancelBtn.addEventListener('click', () => {
-      customerModal.style.display = 'none';
+      hideModal(customerModal);
       customerForm.reset();
     });
   }
@@ -922,7 +962,7 @@ if (document.body.dataset.page === 'extension') {
   if (customerModal) {
     customerModal.addEventListener('click', (e) => {
       if (e.target === customerModal) {
-        customerModal.style.display = 'none';
+        hideModal(customerModal);
         customerForm.reset();
       }
     });
