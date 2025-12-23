@@ -504,7 +504,43 @@ if (document.body.dataset.page === 'extension') {
       }
       noExtensionSelected.style.display = 'none';
 
+      // Get today's date for fetching milk entries
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString().split('T')[0];
+
+      // Fetch today's milk entries for all customers in parallel
+      const milkEntriesPromises = customers.map(async (customer) => {
+        try {
+          const entriesRes = await fetch(`/api/milk-entries/customer/${customer._id}`);
+          if (entriesRes.ok) {
+            const entries = await entriesRes.json();
+            // Find today's entry or most recent entry
+            const todayEntry = entries.find((e) => {
+              const entryDate = new Date(e.date);
+              entryDate.setHours(0, 0, 0, 0);
+              return entryDate.getTime() === today.getTime();
+            });
+            // If no today's entry, get the most recent one
+            const mostRecent = entries.length > 0 
+              ? entries.sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+              : null;
+            return { customerId: customer._id, entry: todayEntry || mostRecent };
+          }
+        } catch (err) {
+          console.error(`Failed to fetch milk entries for customer ${customer._id}:`, err);
+        }
+        return { customerId: customer._id, entry: null };
+      });
+
+      const milkEntriesMap = {};
+      const milkEntriesResults = await Promise.all(milkEntriesPromises);
+      milkEntriesResults.forEach(({ customerId, entry }) => {
+        milkEntriesMap[customerId] = entry;
+      });
+
       customers.forEach((customer) => {
+        const todayEntry = milkEntriesMap[customer._id];
         const li = document.createElement('li');
         li.className = 'item-row';
         li.dataset.customerId = customer._id;
@@ -535,6 +571,11 @@ if (document.body.dataset.page === 'extension') {
         cowInput.placeholder = '0';
         cowInput.style.width = '80px';
         cowInput.style.padding = '0.4rem';
+        // Pre-populate with today's entry or most recent entry
+        if (todayEntry) {
+          // Show the actual value even if it's 0
+          cowInput.value = todayEntry.cow !== undefined && todayEntry.cow !== null ? todayEntry.cow : '';
+        }
 
         const buffaloLabel = document.createElement('label');
         buffaloLabel.textContent = 'Buffalo:';
@@ -546,6 +587,11 @@ if (document.body.dataset.page === 'extension') {
         buffaloInput.placeholder = '0';
         buffaloInput.style.width = '80px';
         buffaloInput.style.padding = '0.4rem';
+        // Pre-populate with today's entry or most recent entry
+        if (todayEntry) {
+          // Show the actual value even if it's 0
+          buffaloInput.value = todayEntry.buffalo !== undefined && todayEntry.buffalo !== null ? todayEntry.buffalo : '';
+        }
 
         const productLabel = document.createElement('label');
         productLabel.textContent = 'Product:';
@@ -604,8 +650,8 @@ if (document.body.dataset.page === 'extension') {
             // Backend returns 201 for create, 200 for update
             const isUpdate = res.status === 200;
             showToast(isUpdate ? 'Milk entry updated!' : 'Milk entry saved!');
-            cowInput.value = '';
-            buffaloInput.value = '';
+            // Don't clear the values - keep them visible so user can see what was saved
+            // The values will be preserved and can be updated if needed
           } catch (err) {
             console.error(err);
             showToast(err.message || 'Could not save milk entry');
