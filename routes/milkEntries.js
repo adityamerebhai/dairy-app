@@ -58,17 +58,22 @@ router.post('/customer/:customerId', async (req, res) => {
 
     // Prepare products array
     let products = [];
-    if (productId && isValidObjectId(productId)) {
+    if (productId && isValidObjectId(productId) && String(productId).trim() !== '') {
       const product = await Product.findById(productId);
       if (product) {
         products = [
           {
             productId: product._id,
             productName: product.name,
-            cost: product.cost,
+            cost: product.cost || 0,
           },
         ];
+        console.log('Saving product with milk entry:', { productId: product._id, productName: product.name, cost: product.cost });
+      } else {
+        console.log('Product not found for productId:', productId);
       }
+    } else {
+      console.log('No productId provided or invalid, products array will be empty');
     }
 
     // Check if entry already exists
@@ -115,17 +120,22 @@ router.put('/customer/:customerId/date/:date', async (req, res) => {
 
     // Prepare products array
     let products = [];
-    if (productId && isValidObjectId(productId)) {
+    if (productId && isValidObjectId(productId) && String(productId).trim() !== '') {
       const product = await Product.findById(productId);
       if (product) {
         products = [
           {
             productId: product._id,
             productName: product.name,
-            cost: product.cost,
+            cost: product.cost || 0,
           },
         ];
+        console.log('Updating product with milk entry:', { productId: product._id, productName: product.name, cost: product.cost });
+      } else {
+        console.log('Product not found for productId:', productId);
       }
+    } else {
+      console.log('No productId provided or invalid, products array will be empty');
     }
 
     const entry = await MilkEntry.findOneAndUpdate(

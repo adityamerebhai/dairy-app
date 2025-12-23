@@ -742,6 +742,8 @@ if (document.body.dataset.page === 'extension') {
           const productId = productSelect.value || null;
           const today = new Date().toISOString().split('T')[0];
 
+          console.log('Saving milk entry:', { customerId: customer._id, date: today, cow, buffalo, productId });
+
           try {
             const res = await fetch(`/api/milk-entries/customer/${customer._id}`, {
               method: 'POST',
@@ -1023,6 +1025,12 @@ if (document.body.dataset.page === 'invoice') {
       const entries = await res.json();
 
       console.log('Loaded milk entries:', entries.length, entries);
+      // Log products for debugging
+      entries.forEach((entry, index) => {
+        if (entry.products && entry.products.length > 0) {
+          console.log(`Entry ${index} has products:`, entry.products);
+        }
+      });
 
       invoiceRows.innerHTML = '';
 
@@ -1060,14 +1068,18 @@ if (document.body.dataset.page === 'invoice') {
         const cowAmount = cow * (milkPrices.cowPrice || 0);
         const buffaloAmount = buffalo * (milkPrices.buffaloPrice || 0);
         
-        // Calculate product amount
+        // Calculate product amount and names
         let productAmount = 0;
         let productNames = [];
-        if (entry.products && entry.products.length > 0) {
+        if (entry.products && Array.isArray(entry.products) && entry.products.length > 0) {
           entry.products.forEach((product) => {
-            productAmount += product.cost || 0;
+            const cost = product.cost || 0;
+            productAmount += cost;
             if (product.productName) {
-              productNames.push(product.productName);
+              productNames.push(`${product.productName} (₹${cost.toFixed(2)})`);
+            } else if (product.productId) {
+              // Fallback: if productName is missing, try to show productId
+              productNames.push(`Product (₹${cost.toFixed(2)})`);
             }
           });
         }
