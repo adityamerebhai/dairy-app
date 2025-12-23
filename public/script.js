@@ -228,6 +228,8 @@ if (document.body.dataset.page === 'dashboard') {
   const todayMilkEl = document.getElementById('today-milk');
   const recentEntriesList = document.getElementById('recent-entries-list');
   const refreshDashboardBtn = document.getElementById('refresh-dashboard-btn');
+  const dailySalesList = document.getElementById('daily-sales-list');
+  const refreshSalesBtn = document.getElementById('refresh-sales-btn');
 
   function formatDate(iso) {
     if (!iso) return '';
@@ -560,6 +562,94 @@ if (document.body.dataset.page === 'dashboard') {
     });
   }
 
+  // Load daily sales
+  async function loadDailySales() {
+    try {
+      const res = await fetch('/api/milk-entries/stats/daily-sales');
+      if (!res.ok) throw new Error('Failed to load daily sales');
+
+      const dailySales = await res.json();
+      if (!dailySalesList) return;
+      
+      dailySalesList.innerHTML = '';
+
+      if (dailySales.length === 0) {
+        dailySalesList.innerHTML = '<p class="empty-state">No sales data available yet.</p>';
+        return;
+      }
+
+      // Create table
+      const table = document.createElement('table');
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.marginTop = '0.5rem';
+
+      // Table header
+      const thead = document.createElement('thead');
+      thead.innerHTML = `
+        <tr style="border-bottom: 2px solid var(--border-subtle);">
+          <th style="text-align: left; padding: 0.75rem 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Date</th>
+          <th style="text-align: right; padding: 0.75rem 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Cow (L)</th>
+          <th style="text-align: right; padding: 0.75rem 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Buffalo (L)</th>
+          <th style="text-align: right; padding: 0.75rem 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Cow Amount</th>
+          <th style="text-align: right; padding: 0.75rem 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Buffalo Amount</th>
+          <th style="text-align: right; padding: 0.75rem 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Product Amount</th>
+          <th style="text-align: right; padding: 0.75rem 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Total Sales</th>
+        </tr>
+      `;
+      table.appendChild(thead);
+
+      // Table body
+      const tbody = document.createElement('tbody');
+      dailySales.forEach((sale) => {
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid var(--border-subtle)';
+        row.style.transition = 'background-color 0.2s ease';
+        
+        const date = new Date(sale.date);
+        const formattedDate = date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+
+        row.innerHTML = `
+          <td style="padding: 0.75rem 0.5rem; font-size: 0.9rem; font-weight: 500;">${formattedDate}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right; font-size: 0.9rem;">${sale.cowLiters.toFixed(1)}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right; font-size: 0.9rem;">${sale.buffaloLiters.toFixed(1)}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right; font-size: 0.9rem; color: var(--text-muted);">₹${sale.cowAmount.toFixed(2)}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right; font-size: 0.9rem; color: var(--text-muted);">₹${sale.buffaloAmount.toFixed(2)}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right; font-size: 0.9rem; color: var(--text-muted);">₹${sale.productAmount.toFixed(2)}</td>
+          <td style="padding: 0.75rem 0.5rem; text-align: right; font-size: 0.9rem; font-weight: 600; color: var(--accent);">₹${sale.totalAmount.toFixed(2)}</td>
+        `;
+
+        row.addEventListener('mouseenter', () => {
+          row.style.backgroundColor = 'var(--accent-soft)';
+        });
+        row.addEventListener('mouseleave', () => {
+          row.style.backgroundColor = 'transparent';
+        });
+
+        tbody.appendChild(row);
+      });
+
+      table.appendChild(tbody);
+      dailySalesList.appendChild(table);
+    } catch (err) {
+      console.error('Error loading daily sales:', err);
+      if (dailySalesList) {
+        dailySalesList.innerHTML = '<p class="empty-state">Error loading daily sales.</p>';
+      }
+    }
+  }
+
+  // Refresh sales button
+  if (refreshSalesBtn) {
+    refreshSalesBtn.addEventListener('click', () => {
+      loadDailySales();
+    });
+  }
+
   // Initial load
   loadDashboard();
   loadProducts();
@@ -567,6 +657,7 @@ if (document.body.dataset.page === 'dashboard') {
     // Ensure edit mode is disabled on initial load
     disableEditMode();
   });
+  loadDailySales();
 }
 
 // Extension page: Load extensions, customers, handle modals

@@ -304,5 +304,73 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /api/milk-entries/stats/daily-sales - get daily sales statistics
+router.get('/stats/daily-sales', async (req, res) => {
+  try {
+    // Get milk prices
+    const milkPrices = await MilkPrice.findOne();
+    const cowPrice = milkPrices?.cowPrice || 0;
+    const buffaloPrice = milkPrices?.buffaloPrice || 0;
+
+    // Get all milk entries
+    const entries = await MilkEntry.find().lean().exec();
+
+    // Group by date and calculate sales
+    const dailySalesMap = new Map();
+
+    entries.forEach((entry) => {
+      const dateKey = entry.date ? new Date(entry.date).toISOString().split('T')[0] : null;
+      if (!dateKey) return;
+
+      const cow = entry.cow || 0;
+      const buffalo = entry.buffalo || 0;
+      const cowAmount = cow * cowPrice;
+      const buffaloAmount = buffalo * buffaloPrice;
+
+      // Calculate product amount
+      let productAmount = 0;
+      if (entry.products && Array.isArray(entry.products) && entry.products.length > 0) {
+        entry.products.forEach((product) => {
+          productAmount += product.cost || 0;
+        });
+      }
+
+      const totalAmount = cowAmount + buffaloAmount + productAmount;
+
+      if (dailySalesMap.has(dateKey)) {
+        const existing = dailySalesMap.get(dateKey);
+        existing.cowLiters += cow;
+        existing.buffaloLiters += buffalo;
+        existing.cowAmount += cowAmount;
+        existing.buffaloAmount += buffaloAmount;
+        existing.productAmount += productAmount;
+        existing.totalAmount += totalAmount;
+        existing.entryCount += 1;
+      } else {
+        dailySalesMap.set(dateKey, {
+          date: dateKey,
+          cowLiters: cow,
+          buffaloLiters: buffalo,
+          cowAmount: cowAmount,
+          buffaloAmount: buffaloAmount,
+          productAmount: productAmount,
+          totalAmount: totalAmount,
+          entryCount: 1,
+        });
+      }
+    });
+
+    // Convert map to array and sort by date (newest first)
+    const dailySales = Array.from(dailySalesMap.values()).sort((a, b) => {
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    res.json(dailySales);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch daily sales statistics' });
+  }
+});
+
 module.exports = router;
 
