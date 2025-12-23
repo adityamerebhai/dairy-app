@@ -683,6 +683,7 @@ if (document.body.dataset.page === 'extension') {
   const extensionSelect = document.getElementById('extension-select');
   const refreshCustomersBtn = document.getElementById('refresh-customers-btn');
   const addCustomerBtn = document.getElementById('add-customer-btn');
+  const saveAllInvoicesBtn = document.getElementById('save-all-invoices-btn');
   const customerModal = document.getElementById('customer-modal-backdrop');
   const customerForm = document.getElementById('customer-form');
   const customerCancelBtn = document.getElementById('customer-cancel-btn');
@@ -987,6 +988,10 @@ if (document.body.dataset.page === 'extension') {
   if (extensionSelect) {
     extensionSelect.addEventListener('change', (e) => {
       currentExtensionId = e.target.value || null;
+      // Show/hide "Save All Invoices" button based on extension selection
+      if (saveAllInvoicesBtn) {
+        saveAllInvoicesBtn.style.display = currentExtensionId ? 'block' : 'none';
+      }
       loadCustomers();
     });
   }
@@ -1083,6 +1088,59 @@ if (document.body.dataset.page === 'extension') {
         addExtensionBtn?.click();
       }
     });
+  }
+
+  // Save All Invoices button
+  if (saveAllInvoicesBtn) {
+    saveAllInvoicesBtn.addEventListener('click', async () => {
+      if (!currentExtensionId) {
+        showToast('Please select an extension first', 'error');
+        return;
+      }
+
+      setButtonLoading(saveAllInvoicesBtn, true);
+      try {
+        const res = await fetch(`/api/milk-entries/extension/${currentExtensionId}/download-all`);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to download invoices');
+        }
+
+        // Get the blob and create download link
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Get filename from Content-Disposition header or use default
+        const contentDisposition = res.headers.get('Content-Disposition');
+        let filename = 'invoices.zip';
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showToast('All invoices downloaded successfully!');
+      } catch (err) {
+        console.error('Error downloading invoices:', err);
+        showToast(err.message || 'Could not download invoices', 'error');
+      } finally {
+        setButtonLoading(saveAllInvoicesBtn, false);
+      }
+    });
+  }
+
+  // Hide "Save All Invoices" button initially
+  if (saveAllInvoicesBtn) {
+    saveAllInvoicesBtn.style.display = 'none';
   }
 
   // Initial load
