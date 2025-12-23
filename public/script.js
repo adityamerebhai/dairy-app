@@ -551,9 +551,9 @@ if (document.body.dataset.page === 'extension') {
         productLabel.textContent = 'Product:';
         productLabel.style.fontSize = '0.8rem';
         const productSelect = document.createElement('select');
-        productSelect.style.width = '120px';
-        productSelect.style.padding = '0.4rem';
-        productSelect.style.fontSize = '0.85rem';
+        productSelect.style.width = '140px';
+        productSelect.style.minWidth = '140px';
+        productSelect.className = 'product-select';
         productSelect.innerHTML = '<option value="">-- Select --</option>';
         productSelect.dataset.customerId = customer._id;
 
