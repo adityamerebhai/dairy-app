@@ -123,13 +123,17 @@ router.get('/customer/:customerId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid customerId' });
     }
 
+    // Fetch ALL entries for this customer - no date filtering
     const entries = await MilkEntry.find({ customerId })
       .sort({ date: 1 })
+      .lean()
       .exec();
 
+    console.log(`Fetched ${entries.length} milk entries for customer ${customerId}`);
+    
     res.json(entries);
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching milk entries:', err);
     res.status(500).json({ error: 'Failed to fetch milk entries for customer' });
   }
 });

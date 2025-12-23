@@ -695,6 +695,8 @@ if (document.body.dataset.page === 'invoice') {
       if (!res.ok) throw new Error('Failed to fetch milk entries');
       const entries = await res.json();
 
+      console.log('Loaded milk entries:', entries.length, entries);
+
       invoiceRows.innerHTML = '';
 
       if (entries.length === 0) {
@@ -707,7 +709,14 @@ if (document.body.dataset.page === 'invoice') {
       let totalCow = 0;
       let totalBuffalo = 0;
 
-      entries.forEach((entry) => {
+      // Sort entries by date to ensure chronological order
+      const sortedEntries = [...entries].sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateA - dateB;
+      });
+
+      sortedEntries.forEach((entry) => {
         const cow = entry.cow || 0;
         const buffalo = entry.buffalo || 0;
         totalCow += cow;
@@ -726,7 +735,7 @@ if (document.body.dataset.page === 'invoice') {
       invoiceTotalCow.textContent = totalCow.toFixed(1);
       invoiceTotalBuffalo.textContent = totalBuffalo.toFixed(1);
     } catch (err) {
-      console.error(err);
+      console.error('Error loading milk entries:', err);
       invoiceRows.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--danger);">Error loading milk entries</td></tr>';
     }
   }
