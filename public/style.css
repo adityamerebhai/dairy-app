@@ -50,6 +50,21 @@ body {
   text-transform: uppercase;
   color: #1f2933;
 }
+.app-title2 {
+  margin: 0;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1f2933;
+  display: block;          /* 👈 forces it below */
+  margin-top: 4px;  
+}
+
+.flex{
+    display: flex;
+    flex-direction: column; /* 👈 this puts items vertically */
+    align-items: flex-start; /* or center if you want */
+}
 
 .nav-links {
   display: flex;
