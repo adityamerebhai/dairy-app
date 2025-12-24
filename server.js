@@ -3,10 +3,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const cron = require('node-cron');
 
 const app = express();
-const PORT = process.env.PORT;
-
+const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
@@ -20,19 +20,13 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
-const extensionRoutes = require('./routes/extensions');
-const customerRoutes = require('./routes/customers');
-const milkEntryRoutes = require('./routes/milkEntries');
-const itemRoutes = require('./routes/items');
-const productRoutes = require('./routes/products');
-const milkPriceRoutes = require('./routes/milkPrices');
-
-app.use('/api/extensions', extensionRoutes);
-app.use('/api/customers', customerRoutes);
-app.use('/api/milk-entries', milkEntryRoutes);
-app.use('/api/items', itemRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/milk-prices', milkPriceRoutes);
+app.use('/api/extensions', require('./routes/extensions'));
+app.use('/api/customers', require('./routes/customers'));
+app.use('/api/milk-entries', require('./routes/milkEntries'));
+app.use('/api/items', require('./routes/items'));
+app.use('/api/products', require('./routes/products'));
+app.use('/api/milk-prices', require('./routes/milkPrices'));
+app.use('/test', require('./routes/test')); // test route
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -44,6 +38,15 @@ mongoose
   .connect(MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => {
     console.log('Connected to MongoDB Atlas');
+
+    // ✅ Start cron ONLY after DB connects
+    const archiveAndReset = require('./jobs/monthlyArchiveAndReset');
+
+    cron.schedule('5 0 1 * *', async () => {
+      console.log('Running monthly archive & reset...');
+      await archiveAndReset();
+    });
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
