@@ -1412,3 +1412,43 @@ handle.addEventListener('click', () => {
     }, "<")
     .set(handle, { display: 'none' });
 });
+
+
+const container = document.querySelector('.container');
+
+extensionSelect.addEventListener('change', () => {
+  if (!extensionSelect.value) return;
+
+  gsap.timeline({
+    defaults: { ease: "power3.inOut", duration: 0.6 },
+    onComplete: () => {
+      container.classList.add('full-width');
+      handle.style.display = 'block';
+    }
+  })
+  .to(extensionsPanel, {
+    flexBasis: 0,
+    opacity: 0
+  })
+  .to(customersPanel, {
+    flexBasis: "100%"
+  }, "<");
+});
+
+handle.addEventListener('click', () => {
+  container.classList.remove('full-width');
+  extensionsPanel.style.display = 'block';
+
+  gsap.timeline({
+    defaults: { ease: "power3.out", duration: 0.6 },
+    onComplete: () => {
+      handle.style.display = 'none';
+    }
+  })
+  .fromTo(
+    extensionsPanel,
+    { flexBasis: 0, opacity: 0 },
+    { flexBasis: "35%", opacity: 1 }
+  );
+});
+

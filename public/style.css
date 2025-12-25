@@ -1120,3 +1120,12 @@ html {
   transition: flex 0.3s ease;
 }
 
+.container.full-width #customers-panel {
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: 100%;
+}
+
+.container.full-width #extensions-panel {
+  display: none;
+}
