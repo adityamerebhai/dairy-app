@@ -3,9 +3,9 @@ const { Schema } = mongoose;
 
 const DeletedCustomerSchema = new Schema(
   {
-    customerId: {
+    originalCustomerId: {
       type: Schema.Types.ObjectId,
-      required: true
+      required: true,
     },
     name: String,
     phone: String,
@@ -13,14 +13,14 @@ const DeletedCustomerSchema = new Schema(
 
     extensionId: {
       type: Schema.Types.ObjectId,
-      ref: 'Extension'
+      ref: 'Extension',
     },
     extensionName: String,
 
     deletedAt: {
       type: Date,
-      default: Date.now
-    }
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );

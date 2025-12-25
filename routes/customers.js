@@ -152,37 +152,52 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+const express = require('express');
+const mongoose = require('mongoose');
 
-
-const DeletedCustomer = require('../models/DeletedCustomer');
+const Customer = require('../models/Customer');
 const Extension = require('../models/Extension');
+const MilkEntry = require('../models/MilkEntry');
+const MilkEntryArchive = require('../models/MilkEntryArchive');
+const DeletedCustomer = require('../models/DeletedCustomer');
 
+// DELETE customer (archive + remove)
 router.delete('/:id', async (req, res) => {
   try {
-    const customer = await Customer.findById(req.params.id);
-    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    const { id } = req.params;
 
-    const extension = await Extension.findById(customer.extension);
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ error: 'Invalid customer id' });
+    }
 
-    // 👉 Save to deleted collection
+    const customer = await Customer.findById(id);
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    const extension = await Extension.findById(customer.extensionId);
+
+    // Save to deletedcustomers collection
     await DeletedCustomer.create({
-      customerId: customer._id,
+      originalCustomerId: customer._id,
       name: customer.name,
       phone: customer.phone,
       address: customer.address,
-      extensionId: extension?._id,
-      extensionName: extension?.name || 'Unknown'
+      extensionId: customer.extensionId,
+      extensionName: extension?.name || 'Unknown',
+      deletedAt: new Date(),
     });
 
-    // 👉 Remove active data
+    // Remove all related data
     await MilkEntry.deleteMany({ customerId: customer._id });
     await MilkEntryArchive.deleteMany({ customerId: customer._id });
     await Customer.findByIdAndDelete(customer._id);
 
     res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error('Delete customer error:', err);
     res.status(500).json({ error: 'Delete failed' });
   }
 });
+
+module.exports = router;
