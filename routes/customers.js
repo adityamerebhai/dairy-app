@@ -152,8 +152,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-const mongoose = require('mongoose');
-
 const Customer = require('../models/Customer');
 const Extension = require('../models/Extension');
 const MilkEntry = require('../models/MilkEntry');
