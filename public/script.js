@@ -1460,6 +1460,7 @@ document.addEventListener('click', async (e) => {
   if (!deleteBtn) return;
 
   const customerId = deleteBtn.dataset.id;
+  console.log('Deleting customer:', customerId);
 
   if (!customerId) {
     alert('Invalid customer id');
@@ -1475,9 +1476,6 @@ document.addEventListener('click', async (e) => {
   try {
     const res = await fetch(`/api/customers/${customerId}`, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     const data = await res.json();
@@ -1486,7 +1484,6 @@ document.addEventListener('click', async (e) => {
       throw new Error(data.error || 'Delete failed');
     }
 
-    // Smooth UI removal
     const row = deleteBtn.closest('.item-row');
     if (row) {
       row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
@@ -1501,5 +1498,3 @@ document.addEventListener('click', async (e) => {
     alert(err.message || 'Delete failed');
   }
 });
-
-
