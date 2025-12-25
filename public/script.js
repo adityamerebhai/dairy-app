@@ -1451,10 +1451,15 @@ handle.addEventListener('click', () => {
   );
 });
 
-document.addEventListener('click', async (e) => {
-  if (!e.target.classList.contains('delete-customer-btn')) return;
 
-  const customerId = e.target.dataset.id;
+// ===============================
+// DELETE CUSTOMER (WITH CONFIRM)
+// ===============================
+document.addEventListener('click', async (e) => {
+  const deleteBtn = e.target.closest('.delete-customer-btn');
+  if (!deleteBtn) return;
+
+  const customerId = deleteBtn.dataset.id;
 
   if (!customerId) {
     alert('Invalid customer id');
@@ -1462,7 +1467,7 @@ document.addEventListener('click', async (e) => {
   }
 
   const confirmDelete = confirm(
-    'Are you sure you want to delete this customer?\nThis action cannot be undone.'
+    'Are you sure you want to delete this customer?\n\nThis action cannot be undone.'
   );
 
   if (!confirmDelete) return;
@@ -1470,6 +1475,9 @@ document.addEventListener('click', async (e) => {
   try {
     const res = await fetch(`/api/customers/${customerId}`, {
       method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
     const data = await res.json();
@@ -1478,14 +1486,20 @@ document.addEventListener('click', async (e) => {
       throw new Error(data.error || 'Delete failed');
     }
 
-    // Smooth UI removal (optional)
-    const row = e.target.closest('.item-row');
-    if (row) row.remove();
+    // Smooth UI removal
+    const row = deleteBtn.closest('.item-row');
+    if (row) {
+      row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(20px)';
+      setTimeout(() => row.remove(), 300);
+    }
 
     alert('Customer deleted successfully');
   } catch (err) {
-    console.error(err);
+    console.error('Delete error:', err);
     alert(err.message || 'Delete failed');
   }
 });
+
 
