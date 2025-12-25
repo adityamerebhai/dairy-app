@@ -1105,13 +1105,14 @@ html {
 #extension-handle {
   position: fixed;
   left: 0;
-  top: 0;
+  top: 18vh;
   width: 6px;
-  height: 5%;
+  height: 60%;
   background: linear-gradient(#22c55e, #16a34a);
   cursor: pointer;
   display: none;
   z-index: 20;
+  border-radius: 20px;
 }
 
 #customers-panel {

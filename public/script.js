@@ -1358,42 +1358,57 @@ const extensionsPanel = document.getElementById('extensions-panel');
 const customersPanel = document.getElementById('customers-panel');
 const handle = document.getElementById('extension-handle');
 
-
 extensionSelect.addEventListener('change', () => {
   if (!extensionSelect.value) return;
 
-  gsap.to(extensionsPanel, {
-    x: -400,
-    opacity: 0,
-    duration: 0.5,
-    ease: "power2.inOut",
-    onComplete: () => {
-      extensionsPanel.style.display = 'none';
-      handle.style.display = 'block';
-    }
-  });
-
-  gsap.to(customersPanel, {
-    flex: 1,
-    duration: 0.5,
-    ease: "power2.inOut"
-  });
+  gsap.timeline()
+    .to(extensionsPanel, {
+      width: 0,
+      opacity: 0,
+      padding: 0,
+      duration: 0.6,
+      ease: "power3.inOut"
+    })
+    .to(customersPanel, {
+      flexGrow: 1,
+      duration: 0.6,
+      ease: "power3.inOut"
+    }, "<")
+    .to(handle, {
+      opacity: 1,
+      display: 'block',
+      duration: 0.3,
+      ease: "power2.out"
+    }, "-=0.2")
+    .set(extensionsPanel, { display: 'none' });
 });
 
 
+
 handle.addEventListener('click', () => {
-  extensionsPanel.style.display = 'block';
+  gsap.set(extensionsPanel, {
+    display: 'block',
+    width: 0,
+    opacity: 0,
+    padding: 0
+  });
 
-  gsap.fromTo(
-    extensionsPanel,
-    { x: -400, opacity: 0 },
-    {
-      x: 0,
+  gsap.timeline()
+    .to(handle, {
+      opacity: 0,
+      duration: 0.2
+    })
+    .to(extensionsPanel, {
+      width: '35%',
       opacity: 1,
-      duration: 0.5,
-      ease: "power2.out"
-    }
-  );
-
-  handle.style.display = 'none';
+      padding: '1rem',
+      duration: 0.6,
+      ease: "power3.out"
+    })
+    .to(customersPanel, {
+      flexGrow: 1,
+      duration: 0.6,
+      ease: "power3.out"
+    }, "<")
+    .set(handle, { display: 'none' });
 });
