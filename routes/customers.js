@@ -152,7 +152,6 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-const express = require('express');
 const mongoose = require('mongoose');
 
 const Customer = require('../models/Customer');
