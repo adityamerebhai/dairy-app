@@ -1,6 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Customer = require('../models/Customer');
+const Extension = require('../models/Extension');
+const MilkEntry = require('../models/MilkEntry');
+const MilkEntryArchive = require('../models/MilkEntryArchive');
+const DeletedCustomer = require('../models/DeletedCustomer');
 
 const router = express.Router();
 
@@ -152,18 +156,12 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-const Customer = require('../models/Customer');
-const Extension = require('../models/Extension');
-const MilkEntry = require('../models/MilkEntry');
-const MilkEntryArchive = require('../models/MilkEntryArchive');
-const DeletedCustomer = require('../models/DeletedCustomer');
 
-// DELETE customer (archive + remove)
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!mongoose.isValidObjectId(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid customer id' });
     }
 
@@ -174,7 +172,6 @@ router.delete('/:id', async (req, res) => {
 
     const extension = await Extension.findById(customer.extensionId);
 
-    // Save to deletedcustomers collection
     await DeletedCustomer.create({
       originalCustomerId: customer._id,
       name: customer.name,
@@ -185,7 +182,6 @@ router.delete('/:id', async (req, res) => {
       deletedAt: new Date(),
     });
 
-    // Remove all related data
     await MilkEntry.deleteMany({ customerId: customer._id });
     await MilkEntryArchive.deleteMany({ customerId: customer._id });
     await Customer.findByIdAndDelete(customer._id);
