@@ -1352,3 +1352,48 @@ if (document.body.dataset.page === 'invoice') {
   loadCustomerDetails();
   loadMilkEntries();
 }
+
+const extensionSelect = document.getElementById('extension-select');
+const extensionsPanel = document.getElementById('extensions-panel');
+const customersPanel = document.getElementById('customers-panel');
+const handle = document.getElementById('extension-handle');
+
+
+extensionSelect.addEventListener('change', () => {
+  if (!extensionSelect.value) return;
+
+  gsap.to(extensionsPanel, {
+    x: -400,
+    opacity: 0,
+    duration: 0.5,
+    ease: "power2.inOut",
+    onComplete: () => {
+      extensionsPanel.style.display = 'none';
+      handle.style.display = 'block';
+    }
+  });
+
+  gsap.to(customersPanel, {
+    flex: 1,
+    duration: 0.5,
+    ease: "power2.inOut"
+  });
+});
+
+
+handle.addEventListener('click', () => {
+  extensionsPanel.style.display = 'block';
+
+  gsap.fromTo(
+    extensionsPanel,
+    { x: -400, opacity: 0 },
+    {
+      x: 0,
+      opacity: 1,
+      duration: 0.5,
+      ease: "power2.out"
+    }
+  );
+
+  handle.style.display = 'none';
+});

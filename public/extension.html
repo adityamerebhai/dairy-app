@@ -21,9 +21,9 @@
       </nav>
     </header>
 
-    <main class="container">
+    <main class="container"  id="main-layout">
       <!-- Extension selector + actions -->
-      <section class="card">
+      <section class="card"  id="extensions-panel">
         <h2>Extensions</h2>
         <div class="form">
           <div class="field">
@@ -58,8 +58,12 @@
         </div>
       </section>
 
+      <!-- disappearing extention css -->
+
+      <div id="extension-handle" title="Show Extensions"></div>
+
       <!-- Customers in selected extension -->
-      <section class="card">
+      <section class="card"  id="customers-panel">
         <div class="card-header">
           <h2>Customers in Extension</h2>
         </div>
@@ -115,6 +119,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
     <script src="script.js"></script>
   </body>
   </html>
