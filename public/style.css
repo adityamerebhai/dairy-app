@@ -1129,3 +1129,11 @@ html {
 .container.full-width #extensions-panel {
   display: none;
 }
+
+.container.full-width {
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}

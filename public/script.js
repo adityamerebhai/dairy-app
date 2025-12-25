@@ -1420,7 +1420,7 @@ extensionSelect.addEventListener('change', () => {
   if (!extensionSelect.value) return;
 
   gsap.timeline({
-    defaults: { ease: "power3.inOut", duration: 0.6 },
+    defaults: { duration: 0.6, ease: "power3.inOut" },
     onComplete: () => {
       container.classList.add('full-width');
       handle.style.display = 'block';
@@ -1431,19 +1431,18 @@ extensionSelect.addEventListener('change', () => {
     opacity: 0
   })
   .to(customersPanel, {
-    flexBasis: "100%"
+    flexGrow: 1
   }, "<");
 });
+
 
 handle.addEventListener('click', () => {
   container.classList.remove('full-width');
   extensionsPanel.style.display = 'block';
 
   gsap.timeline({
-    defaults: { ease: "power3.out", duration: 0.6 },
-    onComplete: () => {
-      handle.style.display = 'none';
-    }
+    defaults: { duration: 0.6, ease: "power3.out" },
+    onComplete: () => handle.style.display = 'none'
   })
   .fromTo(
     extensionsPanel,
@@ -1451,4 +1450,5 @@ handle.addEventListener('click', () => {
     { flexBasis: "35%", opacity: 1 }
   );
 });
+
 
