@@ -1451,11 +1451,15 @@ handle.addEventListener('click', () => {
   );
 });
 
-
 document.addEventListener('click', async (e) => {
   if (!e.target.classList.contains('delete-customer-btn')) return;
 
   const customerId = e.target.dataset.id;
+
+  if (!customerId) {
+    alert('Invalid customer id');
+    return;
+  }
 
   const confirmDelete = confirm(
     'Are you sure you want to delete this customer?\nThis action cannot be undone.'
@@ -1470,11 +1474,18 @@ document.addEventListener('click', async (e) => {
 
     const data = await res.json();
 
-    if (!res.ok) throw new Error(data.message || 'Delete failed');
+    if (!res.ok) {
+      throw new Error(data.error || 'Delete failed');
+    }
+
+    // Smooth UI removal (optional)
+    const row = e.target.closest('.item-row');
+    if (row) row.remove();
 
     alert('Customer deleted successfully');
-    e.target.closest('.item-row').remove(); // remove from UI
   } catch (err) {
-    alert(err.message);
+    console.error(err);
+    alert(err.message || 'Delete failed');
   }
 });
+
