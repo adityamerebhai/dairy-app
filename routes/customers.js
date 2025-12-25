@@ -154,3 +154,35 @@ router.delete('/:id', async (req, res) => {
 
 module.exports = router;
 
+
+const DeletedCustomer = require('../models/DeletedCustomer');
+const Extension = require('../models/Extension');
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+
+    const extension = await Extension.findById(customer.extension);
+
+    // 👉 Save to deleted collection
+    await DeletedCustomer.create({
+      customerId: customer._id,
+      name: customer.name,
+      phone: customer.phone,
+      address: customer.address,
+      extensionId: extension?._id,
+      extensionName: extension?.name || 'Unknown'
+    });
+
+    // 👉 Remove active data
+    await MilkEntry.deleteMany({ customerId: customer._id });
+    await MilkEntryArchive.deleteMany({ customerId: customer._id });
+    await Customer.findByIdAndDelete(customer._id);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Delete failed' });
+  }
+});

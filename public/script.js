@@ -1452,3 +1452,29 @@ handle.addEventListener('click', () => {
 });
 
 
+document.addEventListener('click', async (e) => {
+  if (!e.target.classList.contains('delete-customer-btn')) return;
+
+  const customerId = e.target.dataset.id;
+
+  const confirmDelete = confirm(
+    'Are you sure you want to delete this customer?\nThis action cannot be undone.'
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`/api/customers/${customerId}`, {
+      method: 'DELETE',
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.message || 'Delete failed');
+
+    alert('Customer deleted successfully');
+    e.target.closest('.item-row').remove(); // remove from UI
+  } catch (err) {
+    alert(err.message);
+  }
+});

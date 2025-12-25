@@ -1137,3 +1137,14 @@ html {
   padding-left: 2rem;
   padding-right: 2rem;
 }
+
+.danger-btn {
+  background: radial-gradient(circle at top left, #fecaca, #ef4444);
+  color: #7f1d1d;
+  border: 1px solid rgba(185, 28, 28, 0.7);
+}
+
+.danger-btn:hover {
+  background: radial-gradient(circle at top left, #fca5a5, #dc2626);
+  box-shadow: 0 8px 20px rgba(185, 28, 28, 0.35);
+}
