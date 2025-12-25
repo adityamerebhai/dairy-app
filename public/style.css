@@ -1107,7 +1107,7 @@ html {
   left: 0;
   top: 0;
   width: 6px;
-  height: 100vh;
+  height: 5%;
   background: linear-gradient(#22c55e, #16a34a);
   cursor: pointer;
   display: none;
