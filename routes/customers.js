@@ -140,27 +140,6 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid customer id' });
-    }
-
-    const deleted = await Customer.findByIdAndDelete(id);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Customer not found' });
-    }
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(400).json({ error: 'Failed to delete customer', details: err.message });
-  }
-});
-
-
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid customer id' });
     }
@@ -184,6 +163,7 @@ router.delete('/:id', async (req, res) => {
 
     await MilkEntry.deleteMany({ customerId: customer._id });
     await MilkEntryArchive.deleteMany({ customerId: customer._id });
+
     await Customer.findByIdAndDelete(customer._id);
 
     res.json({ success: true });
