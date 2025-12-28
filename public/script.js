@@ -8,6 +8,13 @@ const emptyState = document.getElementById('empty-state');
 const refreshBtn = document.getElementById('refresh-btn');
 const toast = document.getElementById('toast');
 
+let deleteCustomerId = null;
+
+const deleteModal = document.getElementById('delete-confirm-modal');
+const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+const deleteCancelBtn = document.getElementById('delete-cancel-btn');
+
+
 function showToast(message, type = 'success') {
   if (!toast) return;
   toast.textContent = message;
@@ -1463,83 +1470,54 @@ handle.addEventListener('click', () => {
   );
 });
 
-
 // ===============================
-// DELETE CUSTOMER (WITH CONFIRM)
+// DELETE CUSTOMER (CUSTOM MODAL)
 // ===============================
-document.addEventListener('click', async (e) => {
-  const deleteBtn = e.target.closest('.delete-customer-btn');
-  if (!deleteBtn) return;
-
-  const customerId = deleteBtn.dataset.id;
-  console.log('Deleting customer:', customerId);
-
-  if (!customerId) {
-    alert('Invalid customer id');
-    return;
-  }
-
-  const confirmDelete = confirm(
-    'Are you sure you want to delete this customer?\n\nThis action cannot be undone.'
-  );
-
-  if (!confirmDelete) return;
-
-  try {
-    const res = await fetch(`/api/customers/${customerId}`, {
-      method: 'DELETE',
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || 'Delete failed');
-    }
-
-    const row = deleteBtn.closest('.item-row');
-    if (row) {
-      row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-      row.style.opacity = '0';
-      row.style.transform = 'translateX(20px)';
-      setTimeout(() => row.remove(), 300);
-    }
-
-    alert('Customer deleted successfully');
-  } catch (err) {
-    console.error('Delete error:', err);
-    alert(err.message || 'Delete failed');
-  }
-});
-
-// ===============================
-// DELETE CUSTOMER (GLOBAL HANDLER)
-// ===============================
-document.addEventListener('click', async (e) => {
+// Open delete popup
+document.addEventListener('click', (e) => {
   const btn = e.target.closest('.delete-customer-btn');
   if (!btn) return;
 
-  const customerId = btn.dataset.id;
-  if (!customerId) {
-    alert('Customer id missing');
+  deleteCustomerId = btn.dataset.id;
+  if (!deleteCustomerId) {
+    showToast('Invalid customer id');
     return;
   }
 
-  if (!confirm('Delete this customer permanently?')) return;
+  document.getElementById('delete-confirm-modal').style.display = 'flex';
+});
+
+// Cancel delete
+document.getElementById('delete-cancel-btn').addEventListener('click', () => {
+  deleteCustomerId = null;
+  document.getElementById('delete-confirm-modal').style.display = 'none';
+});
+
+// Confirm delete
+document.getElementById('delete-confirm-btn').addEventListener('click', async () => {
+  if (!deleteCustomerId) return;
 
   try {
-    const res = await fetch(`/api/customers/${customerId}`, {
+    const res = await fetch(`/api/customers/${deleteCustomerId}`, {
       method: 'DELETE',
     });
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Delete failed');
 
-    // remove UI row
-    const row = btn.closest('.item-row');
+    // Remove row from UI
+    const row = document
+      .querySelector(`.delete-customer-btn[data-id="${deleteCustomerId}"]`)
+      ?.closest('.item-row');
+
     if (row) row.remove();
 
-    alert('Customer deleted');
+    showToast('Customer deleted');
   } catch (err) {
-    alert(err.message);
+    console.error(err);
+    alert(err.message || 'Delete failed');
+  } finally {
+    deleteCustomerId = null;
+    document.getElementById('delete-confirm-modal').style.display = 'none';
   }
 });
