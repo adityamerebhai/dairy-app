@@ -1148,3 +1148,13 @@ html {
   background: radial-gradient(circle at top left, #fca5a5, #dc2626);
   box-shadow: 0 8px 20px rgba(185, 28, 28, 0.35);
 }
+
+.danger-btn {
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  background: transparent;
+}
+
+.danger-btn:hover {
+  background: #fee2e2;
+}

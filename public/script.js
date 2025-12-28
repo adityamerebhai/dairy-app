@@ -940,6 +940,18 @@ if (document.body.dataset.page === 'extension') {
         actions.appendChild(editBtn);
         actions.appendChild(invoiceBtn);
 
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn danger-btn delete-customer-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.style.fontSize = '0.75rem';
+        deleteBtn.style.padding = '0.4rem 0.8rem';
+
+        // store customer id
+        deleteBtn.dataset.id = customer._id;
+
+        actions.appendChild(deleteBtn);
+
+
         li.appendChild(main);
         li.appendChild(actions);
         customerList.appendChild(li);
@@ -1496,5 +1508,38 @@ document.addEventListener('click', async (e) => {
   } catch (err) {
     console.error('Delete error:', err);
     alert(err.message || 'Delete failed');
+  }
+});
+
+// ===============================
+// DELETE CUSTOMER (GLOBAL HANDLER)
+// ===============================
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.delete-customer-btn');
+  if (!btn) return;
+
+  const customerId = btn.dataset.id;
+  if (!customerId) {
+    alert('Customer id missing');
+    return;
+  }
+
+  if (!confirm('Delete this customer permanently?')) return;
+
+  try {
+    const res = await fetch(`/api/customers/${customerId}`, {
+      method: 'DELETE',
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Delete failed');
+
+    // remove UI row
+    const row = btn.closest('.item-row');
+    if (row) row.remove();
+
+    alert('Customer deleted');
+  } catch (err) {
+    alert(err.message);
   }
 });
