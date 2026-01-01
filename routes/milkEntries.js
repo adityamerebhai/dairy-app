@@ -329,6 +329,8 @@ router.get('/extension/:extensionId/download-all', async (req, res) => {
       return res.status(404).json({ error: 'Extension not found' });
     }
 
+    const { date } = req.query;
+
     // Get all customers for this extension
     const customers = await Customer.find({ extensionId }).lean().exec();
 
@@ -353,13 +355,26 @@ router.get('/extension/:extensionId/download-all', async (req, res) => {
 
     // Generate Excel file for each customer
     for (const customer of customers) {
-      const entries = await MilkEntry.find({ customerId: customer._id })
-        .sort({ date: 1 })
-        .lean()
-        .exec();
+      let entries = [];
+      if (date) {
+        // Only include entries that match the specified date
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+        entries = await MilkEntry.find({ customerId: customer._id, date: { $gte: start, $lt: end } })
+          .sort({ date: 1 })
+          .lean()
+          .exec();
+      } else {
+        entries = await MilkEntry.find({ customerId: customer._id })
+          .sort({ date: 1 })
+          .lean()
+          .exec();
+      }
 
       if (entries.length === 0) {
-        // Skip customers with no entries
+        // Skip customers with no entries (for the requested date or overall if no date provided)
         continue;
       }
 

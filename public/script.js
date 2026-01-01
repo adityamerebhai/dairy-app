@@ -1790,6 +1790,165 @@ if (document.body.dataset.page === 'invoice') {
     }
   }
 
+  // Load invoices for an entire extension for a specified date
+  async function loadExtensionInvoices(extensionId, dateISO) {
+    const extSection = document.getElementById('invoice-extension-section');
+    const extRowsEl = document.getElementById('extension-invoice-rows');
+    const extNameEl = document.getElementById('extension-name');
+    const extDateEl = document.getElementById('extension-invoice-date');
+
+    if (!extensionId) {
+      extSection.style.display = 'none';
+      return;
+    }
+
+    try {
+      // Fetch extension name (simple fetch of all extensions and find by id)
+      let extensionName = '—';
+      try {
+        const extRes = await fetch('/api/extensions');
+        if (extRes.ok) {
+          const allExt = await extRes.json();
+          const found = allExt.find((e) => e._id === extensionId);
+          if (found) extensionName = found.name;
+        }
+      } catch (err) {
+        console.error('Failed to fetch extension name:', err);
+      }
+
+      extNameEl.textContent = extensionName;
+      extDateEl.textContent = dateISO || new Date().toISOString().split('T')[0];
+
+      // Fetch customers for extension
+      const custRes = await fetch(`/api/customers/extension/${extensionId}`);
+      if (!custRes.ok) throw new Error('Failed to fetch customers for extension');
+      const customers = await custRes.json();
+
+      if (!Array.isArray(customers) || customers.length === 0) {
+        extRowsEl.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem;">No customers in this extension</td></tr>';
+        extSection.style.display = 'block';
+        document.querySelector('.customer-invoice-section')?.style.display = 'none';
+        document.querySelector('.invoice-customer')?.style.display = 'none';
+        return;
+      }
+
+      // For each customer fetch their milk entries and pick the entry for dateISO (or today if not provided)
+      const targetDate = dateISO || new Date().toISOString().split('T')[0];
+
+      // Ensure milk prices loaded
+      await loadMilkPrices();
+
+      const fetchPromises = customers.map(async (c) => {
+        try {
+          const res = await fetch(`/api/milk-entries/customer/${c._id}`);
+          if (!res.ok) return { customer: c, entry: null };
+          const entries = await res.json();
+          const entry = entries.find((e) => {
+            const d = new Date(e.date).toISOString().split('T')[0];
+            return d === targetDate;
+          }) || null;
+          return { customer: c, entry };
+        } catch (err) {
+          console.error('Error fetching entries for customer', c._id, err);
+          return { customer: c, entry: null };
+        }
+      });
+
+      const results = await Promise.all(fetchPromises);
+
+      // Build table
+      let totalCow = 0, totalBuffalo = 0, totalProduct = 0, grandTotal = 0;
+      extRowsEl.innerHTML = '';
+
+      results.forEach(({ customer, entry }) => {
+        const cow = entry?.cow || 0;
+        const buffalo = entry?.buffalo || 0;
+        totalCow += cow;
+        totalBuffalo += buffalo;
+
+        let productAmount = 0;
+        let productNames = [];
+        if (entry?.products && Array.isArray(entry.products)) {
+          entry.products.forEach((p) => {
+            const cost = p.cost || 0;
+            const qty = p.quantity || 0;
+            productAmount += cost;
+            if (p.productName) productNames.push(`${p.productName} (${qty}kg, ₹${cost.toFixed(2)})`);
+            else productNames.push(`Product (${qty}kg, ₹${cost.toFixed(2)})`);
+          });
+        }
+
+        totalProduct += productAmount;
+        const cowAmt = cow * (milkPrices.cowPrice || 0);
+        const buffaloAmt = buffalo * (milkPrices.buffaloPrice || 0);
+        const rowTotal = cowAmt + buffaloAmt + productAmount;
+        grandTotal += rowTotal;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${customer.name || '—'}</td>
+          <td>${customer.phone || '—'}</td>
+          <td>${customer.address || '—'}</td>
+          <td>${cow.toFixed(1)}</td>
+          <td>${buffalo.toFixed(1)}</td>
+          <td>${productNames.length > 0 ? productNames.join(', ') : '—'}</td>
+          <td>₹${productAmount.toFixed(2)}</td>
+          <td>₹${rowTotal.toFixed(2)}</td>
+        `;
+        extRowsEl.appendChild(tr);
+      });
+
+      document.getElementById('ext-total-cow').textContent = totalCow.toFixed(1);
+      document.getElementById('ext-total-buffalo').textContent = totalBuffalo.toFixed(1);
+      document.getElementById('ext-total-product').textContent = `₹${totalProduct.toFixed(2)}`;
+      document.getElementById('ext-grand-total').textContent = `₹${grandTotal.toFixed(2)}`;
+
+      // Toggle visibility
+      extSection.style.display = 'block';
+      document.querySelector('.customer-invoice-section')?.style.display = 'none';
+      document.querySelector('.invoice-customer')?.style.display = 'none';
+
+      // Wire print/download buttons to extension mode
+      const excelBtn = document.getElementById('invoice-excel-btn');
+      const printBtn = document.getElementById('invoice-print-btn');
+
+      if (excelBtn) {
+        excelBtn.onclick = async () => {
+          setButtonLoading(excelBtn, true);
+          try {
+            const res = await fetch(`/api/milk-entries/extension/${extensionId}/download-all?date=${targetDate}`);
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.error || 'Failed to download excel/zip');
+            }
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `extension-invoices-${extensionName || extensionId}-${targetDate}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          } catch (err) {
+            console.error(err);
+            showToast(err.message || 'Failed to download', 'error');
+          } finally {
+            setButtonLoading(excelBtn, false);
+          }
+        };
+      }
+
+      if (printBtn) {
+        printBtn.onclick = () => window.print();
+      }
+    } catch (err) {
+      console.error('Error loading extension invoices:', err);
+      const extRowsEl = document.getElementById('extension-invoice-rows');
+      extRowsEl.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color: var(--danger);">Error loading extension invoices</td></tr>';
+      document.getElementById('invoice-extension-section').style.display = 'block';
+    }
+  }
+
   // Set generated date
   if (generatedDateEl) {
     const now = new Date();
@@ -1817,7 +1976,15 @@ if (document.body.dataset.page === 'invoice') {
 
   // Load data on page load
   loadMilkPrices();
-  loadCustomerDetails();
+
+  // If extension mode requested, load extension invoices
+  if (extensionIdFromQuery) {
+    const targetDate = dateFromQuery || new Date().toISOString().split('T')[0];
+    loadExtensionInvoices(extensionIdFromQuery, targetDate);
+  } else {
+    loadCustomerDetails();
+    loadMilkEntries();
+  }
   loadMilkEntries();
 }
 
