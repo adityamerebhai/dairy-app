@@ -774,6 +774,46 @@ if (document.body.dataset.page === 'extension') {
   let currentExtensionId = null;
   let allProducts = []; // Cache products
 
+  // Utility: debounce
+  function debounce(fn, wait = 600) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fn.apply(this, args), wait);
+    };
+  }
+
+  // Save a milk entry for a customer (used by save button, autosave and save-all)
+  async function saveMilkEntry(customerId, { date = null, cow = 0, buffalo = 0, productId = null } = {}) {
+    const today = date || new Date().toISOString().split('T')[0];
+    const payload = { date: today, cow, buffalo, productId };
+
+    const res = await fetch(`/api/milk-entries/customer/${customerId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Save failed');
+    }
+
+    return await res.json();
+  }
+
+  // Flash saved state on button without spamming toasts
+  function flashSaved(button) {
+    if (!button) return;
+    const prev = button.textContent;
+    button.textContent = 'Saved';
+    button.disabled = true;
+    setTimeout(() => {
+      button.textContent = prev;
+      button.disabled = false;
+    }, 900);
+  }
+
   // Load all products once
   async function loadAllProducts() {
     try {
@@ -965,32 +1005,54 @@ if (document.body.dataset.page === 'extension') {
         saveBtn.textContent = 'Save';
         saveBtn.style.fontSize = '0.75rem';
         saveBtn.style.padding = '0.4rem 0.8rem';
+        // Save button uses helper
         saveBtn.addEventListener('click', async () => {
           const cow = parseFloat(cowInput.value) || 0;
           const buffalo = parseFloat(buffaloInput.value) || 0;
           const productId = productSelect.value || null;
-          const today = new Date().toISOString().split('T')[0];
-
-          console.log('Saving milk entry:', { customerId: customer._id, date: today, cow, buffalo, productId });
 
           try {
-            const res = await fetch(`/api/milk-entries/customer/${customer._id}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ date: today, cow, buffalo, productId }),
-            });
-            if (!res.ok) {
-              const errorData = await res.json().catch(() => ({}));
-              throw new Error(errorData.error || 'Save failed');
-            }
-            // Backend returns 201 for create, 200 for update
-            const isUpdate = res.status === 200;
-            showToast(isUpdate ? 'Milk entry updated!' : 'Milk entry saved!');
-            // Don't clear the values - keep them visible so user can see what was saved
-            // The values will be preserved and can be updated if needed
+            await saveMilkEntry(customer._id, { cow, buffalo, productId });
+            flashSaved(saveBtn);
+            showToast('Milk entry saved!');
           } catch (err) {
             console.error(err);
-            showToast(err.message || 'Could not save milk entry');
+            showToast(err.message || 'Could not save milk entry', 'error');
+          }
+        });
+
+        // Autosave on input changes (debounced)
+        const autoSaveHandler = debounce(async () => {
+          const cow = parseFloat(cowInput.value) || 0;
+          const buffalo = parseFloat(buffaloInput.value) || 0;
+          const productId = productSelect.value || null;
+
+          try {
+            await saveMilkEntry(customer._id, { cow, buffalo, productId });
+            // subtle feedback without noisy toasts
+            flashSaved(saveBtn);
+          } catch (err) {
+            console.error('Autosave error:', err);
+            // showToast(err.message || 'Autosave failed', 'error');
+          }
+        }, 700);
+
+        cowInput.addEventListener('input', autoSaveHandler);
+        buffaloInput.addEventListener('input', autoSaveHandler);
+
+        // Save immediately when product changes (user explicitly changed product)
+        productSelect.addEventListener('change', async () => {
+          const cow = parseFloat(cowInput.value) || 0;
+          const buffalo = parseFloat(buffaloInput.value) || 0;
+          const productId = productSelect.value || null;
+
+          try {
+            await saveMilkEntry(customer._id, { cow, buffalo, productId });
+            flashSaved(saveBtn);
+            showToast('Product updated for today');
+          } catch (err) {
+            console.error(err);
+            showToast(err.message || 'Could not update product', 'error');
           }
         });
 
@@ -1113,11 +1175,60 @@ if (document.body.dataset.page === 'extension') {
   if (extensionSelect) {
     extensionSelect.addEventListener('change', (e) => {
       currentExtensionId = e.target.value || null;
-      // Show/hide "Save All Invoices" button based on extension selection
+      // Show/hide "Save All Invoices" and "Save All Entries" buttons based on extension selection
       if (saveAllInvoicesBtn) {
         saveAllInvoicesBtn.style.display = currentExtensionId ? 'block' : 'none';
       }
+      const saveAllEntriesBtn = document.getElementById('save-all-entries-btn');
+      if (saveAllEntriesBtn) {
+        saveAllEntriesBtn.style.display = currentExtensionId ? 'block' : 'none';
+      }
       loadCustomers();
+    });
+  }
+
+  // Save All Entries button
+  const saveAllEntriesBtn = document.getElementById('save-all-entries-btn');
+  if (saveAllEntriesBtn) {
+    saveAllEntriesBtn.addEventListener('click', async () => {
+      if (!currentExtensionId) {
+        showToast('Please select an extension first', 'error');
+        return;
+      }
+
+      setButtonLoading(saveAllEntriesBtn, true);
+
+      try {
+        const rows = Array.from(document.querySelectorAll('#customer-list .item-row'));
+        let saved = 0;
+        let failed = 0;
+
+        await Promise.all(rows.map(async (row) => {
+          const customerId = row.dataset.customerId;
+          const cowInput = row.querySelector('input[type="number"]');
+          const buffaloInput = row.querySelectorAll('input[type="number"]')[1];
+          const productSelect = row.querySelector('.product-select');
+
+          const cow = parseFloat(cowInput?.value) || 0;
+          const buffalo = parseFloat(buffaloInput?.value) || 0;
+          const productId = productSelect?.value || null;
+
+          try {
+            await saveMilkEntry(customerId, { cow, buffalo, productId });
+            saved += 1;
+          } catch (err) {
+            failed += 1;
+            console.error('Save all entry error for', customerId, err);
+          }
+        }));
+
+        showToast(`Saved entries for ${saved} customers${failed ? `, ${failed} failed` : ''}`);
+      } catch (err) {
+        console.error('Save all entries failed', err);
+        showToast('Failed to save all entries', 'error');
+      } finally {
+        setButtonLoading(saveAllEntriesBtn, false);
+      }
     });
   }
 
