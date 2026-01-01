@@ -1845,8 +1845,8 @@ if (document.body.dataset.page === 'invoice') {
 
       const results = await Promise.all(fetchPromises);
 
-      // Build table
-      let totalCow = 0, totalBuffalo = 0, totalProduct = 0, grandTotal = 0;
+      // Build table (money columns removed)
+      let totalCow = 0, totalBuffalo = 0;
       extRowsEl.innerHTML = '';
 
       results.forEach(({ customer, entry }) => {
@@ -1855,23 +1855,15 @@ if (document.body.dataset.page === 'invoice') {
         totalCow += cow;
         totalBuffalo += buffalo;
 
-        let productAmount = 0;
         let productNames = [];
         if (entry?.products && Array.isArray(entry.products)) {
           entry.products.forEach((p) => {
-            const cost = p.cost || 0;
             const qty = p.quantity || 0;
-            productAmount += cost;
-            if (p.productName) productNames.push(`${p.productName} (${qty}kg, ₹${cost.toFixed(2)})`);
-            else productNames.push(`Product (${qty}kg, ₹${cost.toFixed(2)})`);
+            // Show product name and quantity only (no currency)
+            if (p.productName) productNames.push(`${p.productName} (${qty}kg)`);
+            else productNames.push(`Product (${qty}kg)`);
           });
         }
-
-        totalProduct += productAmount;
-        const cowAmt = cow * (milkPrices.cowPrice || 0);
-        const buffaloAmt = buffalo * (milkPrices.buffaloPrice || 0);
-        const rowTotal = cowAmt + buffaloAmt + productAmount;
-        grandTotal += rowTotal;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -1881,16 +1873,12 @@ if (document.body.dataset.page === 'invoice') {
           <td>${cow.toFixed(1)}</td>
           <td>${buffalo.toFixed(1)}</td>
           <td>${productNames.length > 0 ? productNames.join(', ') : '—'}</td>
-          <td>₹${productAmount.toFixed(2)}</td>
-          <td>₹${rowTotal.toFixed(2)}</td>
         `;
         extRowsEl.appendChild(tr);
       });
 
       document.getElementById('ext-total-cow').textContent = totalCow.toFixed(1);
       document.getElementById('ext-total-buffalo').textContent = totalBuffalo.toFixed(1);
-      document.getElementById('ext-total-product').textContent = `₹${totalProduct.toFixed(2)}`;
-      document.getElementById('ext-grand-total').textContent = `₹${grandTotal.toFixed(2)}`;
 
       // Toggle visibility
       extSection.style.display = 'block';
