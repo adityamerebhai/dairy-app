@@ -1088,8 +1088,35 @@ if (document.body.dataset.page === 'extension') {
         inputsDiv.appendChild(qtyLabel);
         inputsDiv.appendChild(qtyInput);
 
+        // Product cost display
+        const productCostEl = document.createElement('span');
+        productCostEl.style.fontSize = '0.88rem';
+        productCostEl.style.color = 'var(--text-muted)';
+        productCostEl.style.marginLeft = '0.5rem';
+        productCostEl.textContent = '';
+
+        inputsDiv.appendChild(productCostEl);
+
+        // Helper to compute and show product total cost
+        function updateProductCostDisplay() {
+          const pid = productSelect.value || null;
+          const qty = parseFloat(qtyInput.value) || 0;
+          const prod = allProducts.find(p => p._id === pid);
+          const unit = prod?.cost || 0;
+          const total = unit * qty;
+          if (pid && qty > 0) {
+            productCostEl.textContent = `₹${total.toFixed(2)} (${qty}kg)`;
+          } else if (pid) {
+            productCostEl.textContent = `₹${total.toFixed(2)}`;
+          } else {
+            productCostEl.textContent = '';
+          }
+        }
+
         main.appendChild(nameDiv);
         main.appendChild(inputsDiv);
+        // Update cost display based on initial values
+        updateProductCostDisplay();
 
         const actions = document.createElement('div');
         actions.className = 'item-actions';
@@ -1127,6 +1154,7 @@ if (document.body.dataset.page === 'extension') {
             await saveMilkEntry(customer._id, { cow, buffalo, productId, productQuantity });
             flashSaved(saveBtn);
             saveStatus.textContent = 'Saved';
+            updateProductCostDisplay();
             setTimeout(() => { saveStatus.textContent = ''; }, 1200);
             showToast('Milk entry saved!');
           } catch (err) {
@@ -1143,7 +1171,8 @@ if (document.body.dataset.page === 'extension') {
         const autoSaveHandler = debounce(async () => {
           const cow = parseFloat(cowInput.value) || 0;
           const buffalo = parseFloat(buffaloInput.value) || 0;
-          const productId = productSelect.value || null;
+          // Prefer visible selection, fall back to today's entry product or permanent default
+          const productId = productSelect.value || (todayEntry && todayEntry.products && todayEntry.products[0] && todayEntry.products[0].productId) || (customer.defaultProductPermanent ? customer.defaultProductId : null) || null;
           const productQuantity = parseFloat(qtyInput.value) || 0;
 
           try {
@@ -1152,6 +1181,7 @@ if (document.body.dataset.page === 'extension') {
             // subtle feedback without noisy toasts
             flashSaved(saveBtn);
             saveStatus.textContent = 'Saved';
+            updateProductCostDisplay();
             setTimeout(() => { saveStatus.textContent = ''; }, 900);
           } catch (err) {
             console.error('Autosave error:', err);
@@ -1163,6 +1193,9 @@ if (document.body.dataset.page === 'extension') {
 
         cowInput.addEventListener('input', autoSaveHandler);
         buffaloInput.addEventListener('input', autoSaveHandler);
+        qtyInput.addEventListener('input', autoSaveHandler);
+        // Update cost display live as quantity changes
+        qtyInput.addEventListener('input', updateProductCostDisplay);
 
         // Save immediately when product changes (user explicitly changed product)
         productSelect.addEventListener('change', async () => {
@@ -1170,9 +1203,12 @@ if (document.body.dataset.page === 'extension') {
           const buffalo = parseFloat(buffaloInput.value) || 0;
           const productId = productSelect.value || null;
 
+          updateProductCostDisplay();
+
           try {
             saveStatus.textContent = 'Saving...';
-            await saveMilkEntry(customer._id, { cow, buffalo, productId });
+            const productQuantity = parseFloat(qtyInput.value) || 0;
+            await saveMilkEntry(customer._id, { cow, buffalo, productId, productQuantity });
             flashSaved(saveBtn);
             saveStatus.textContent = 'Saved';
             setTimeout(() => { saveStatus.textContent = ''; }, 900);
@@ -1301,8 +1337,9 @@ if (document.body.dataset.page === 'extension') {
               // save today's entry with product immediately
               const cow = parseFloat(cowInput.value) || 0;
               const buffalo = parseFloat(buffaloInput.value) || 0;
+              const productQuantity = parseFloat(qtyInput.value) || 0;
               try {
-                await saveMilkEntry(customer._id, { cow, buffalo, productId: customer.defaultProductId });
+                await saveMilkEntry(customer._id, { cow, buffalo, productId: customer.defaultProductId, productQuantity });
                 saveStatus.textContent = 'Saved';
                 setTimeout(() => { saveStatus.textContent = ''; }, 900);
               } catch (err) {
