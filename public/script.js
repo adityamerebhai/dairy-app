@@ -1814,8 +1814,10 @@ if (document.body.dataset.page === 'invoice') {
       if (!Array.isArray(customers) || customers.length === 0) {
         extRowsEl.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem;">No customers in this extension</td></tr>';
         extSection.style.display = 'block';
-        document.querySelector('.customer-invoice-section')?.style.display = 'none';
-        document.querySelector('.invoice-customer')?.style.display = 'none';
+        const custSectionEl = document.querySelector('.customer-invoice-section');
+        if (custSectionEl) custSectionEl.style.display = 'none';
+        const invoiceCustEl = document.querySelector('.invoice-customer');
+        if (invoiceCustEl) invoiceCustEl.style.display = 'none';
         return;
       }
 
@@ -1892,8 +1894,10 @@ if (document.body.dataset.page === 'invoice') {
 
       // Toggle visibility
       extSection.style.display = 'block';
-      document.querySelector('.customer-invoice-section')?.style.display = 'none';
-      document.querySelector('.invoice-customer')?.style.display = 'none';
+      const custSectionEl2 = document.querySelector('.customer-invoice-section');
+      if (custSectionEl2) custSectionEl2.style.display = 'none';
+      const invoiceCustEl2 = document.querySelector('.invoice-customer');
+      if (invoiceCustEl2) invoiceCustEl2.style.display = 'none';
 
       // Wire print/download buttons to extension mode
       const excelBtn = document.getElementById('invoice-excel-btn');
