@@ -6,7 +6,6 @@ const Product = require('../models/Product');
 const MilkEntry = require('../models/MilkEntry');
 const MilkEntryArchive = require('../models/MilkEntryArchive');
 const DeletedCustomer = require('../models/DeletedCustomer');
-const Product = require('../models/Product');
 
 const router = express.Router();
 
