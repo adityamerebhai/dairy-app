@@ -880,7 +880,7 @@ if (document.body.dataset.page === 'extension') {
           const entriesRes = await fetch(`/api/milk-entries/customer/${customer._id}`);
           if (entriesRes.ok) {
             const entries = await entriesRes.json();
-            // Find today's entry or most recent entry
+            // Find today's entry and the most recent entry
             const todayEntry = entries.find((e) => {
               const entryDate = new Date(e.date);
               entryDate.setHours(0, 0, 0, 0);
@@ -890,19 +890,91 @@ if (document.body.dataset.page === 'extension') {
             const mostRecent = entries.length > 0 
               ? entries.sort((a, b) => new Date(b.date) - new Date(a.date))[0]
               : null;
-            return { customerId: customer._id, entry: todayEntry || mostRecent };
+            return { customerId: customer._id, todayEntry: todayEntry || null, mostRecent };
           }
         } catch (err) {
           console.error(`Failed to fetch milk entries for customer ${customer._id}:`, err);
         }
-        return { customerId: customer._id, entry: null };
+        return { customerId: customer._id, todayEntry: null, mostRecent: null };
       });
 
       const milkEntriesMap = {};
+      const milkMostRecentMap = {};
       const milkEntriesResults = await Promise.all(milkEntriesPromises);
-      milkEntriesResults.forEach(({ customerId, entry }) => {
-        milkEntriesMap[customerId] = entry;
+      milkEntriesResults.forEach(({ customerId, todayEntry, mostRecent }) => {
+        milkEntriesMap[customerId] = todayEntry;
+        milkMostRecentMap[customerId] = mostRecent;
       });
+
+      // Carry-forward: if today's entry doesn't exist, and we have a mostRecent from before today,
+      // create today's entry automatically (run once per extension per day)
+      try {
+        const lastCarryKey = `carryForward:${currentExtensionId}`;
+        const lastCarry = localStorage.getItem(lastCarryKey);
+        const todayISO = today.toISOString().split('T')[0];
+
+        if (currentExtensionId && lastCarry !== todayISO) {
+          const toCarry = customers.filter((c) => {
+            const tEntry = milkEntriesMap[c._id];
+            const mRecent = milkMostRecentMap[c._id];
+            if (tEntry) return false; // already has today's entry
+            if (!mRecent) return false;
+            const recentDate = new Date(mRecent.date);
+            recentDate.setHours(0,0,0,0);
+            return recentDate.getTime() < today.getTime();
+          });
+
+          if (toCarry.length > 0) {
+            // Perform saves in parallel
+            const carryResults = await Promise.allSettled(
+              toCarry.map(async (c) => {
+                const recent = milkMostRecentMap[c._id];
+                const cow = recent.cow || 0;
+                const buffalo = recent.buffalo || 0;
+                const productId = (recent.products && recent.products[0] && recent.products[0].productId) || null;
+                try {
+                  await saveMilkEntry(c._id, { date: todayISO, cow, buffalo, productId });
+                  return { customerId: c._id, ok: true };
+                } catch (err) {
+                  return { customerId: c._id, ok: false, error: err.message };
+                }
+              })
+            );
+
+            const successCount = carryResults.filter(r => r.status === 'fulfilled' && r.value && r.value.ok).length;
+            const failCount = carryResults.filter(r => r.status === 'fulfilled' && r.value && !r.value.ok).length + carryResults.filter(r => r.status === 'rejected').length;
+
+            if (successCount > 0) {
+              showToast(`Carried forward ${successCount} entries for today`);
+              // mark as done for today
+              localStorage.setItem(lastCarryKey, todayISO);
+            }
+            if (failCount > 0) {
+              console.error('Some carry-forward operations failed', carryResults);
+              showToast(`${failCount} entries failed to carry forward`, 'error');
+            }
+            // Refresh the milkEntriesMap after carry-forward so UI renders today's entries
+            const refreshedPromises = toCarry.map(async (c) => {
+              const res = await fetch(`/api/milk-entries/customer/${c._id}`);
+              if (res.ok) {
+                const entries = await res.json();
+                const todayEntry = entries.find((e) => {
+                  const entryDate = new Date(e.date);
+                  entryDate.setHours(0, 0, 0, 0);
+                  return entryDate.getTime() === today.getTime();
+                });
+                milkEntriesMap[c._id] = todayEntry || null;
+              }
+            });
+            await Promise.all(refreshedPromises);
+          } else {
+            // still mark as done to avoid repeated checks when no carry needed
+            localStorage.setItem(lastCarryKey, todayISO);
+          }
+        }
+      } catch (err) {
+        console.error('Carry-forward error:', err);
+      }
 
       customers.forEach((customer) => {
         const todayEntry = milkEntriesMap[customer._id];
@@ -1005,7 +1077,8 @@ if (document.body.dataset.page === 'extension') {
         saveBtn.textContent = 'Save';
         saveBtn.style.fontSize = '0.75rem';
         saveBtn.style.padding = '0.4rem 0.8rem';
-        // Save button uses helper
+        // Hide explicit Save button - entries will be autosaved and carried forward automatically
+        saveBtn.style.display = 'none';
         saveBtn.addEventListener('click', async () => {
           const cow = parseFloat(cowInput.value) || 0;
           const buffalo = parseFloat(buffaloInput.value) || 0;
@@ -1175,62 +1248,15 @@ if (document.body.dataset.page === 'extension') {
   if (extensionSelect) {
     extensionSelect.addEventListener('change', (e) => {
       currentExtensionId = e.target.value || null;
-      // Show/hide "Save All Invoices" and "Save All Entries" buttons based on extension selection
+      // Show/hide "Save All Invoices" button based on extension selection
       if (saveAllInvoicesBtn) {
         saveAllInvoicesBtn.style.display = currentExtensionId ? 'block' : 'none';
-      }
-      const saveAllEntriesBtn = document.getElementById('save-all-entries-btn');
-      if (saveAllEntriesBtn) {
-        saveAllEntriesBtn.style.display = currentExtensionId ? 'block' : 'none';
       }
       loadCustomers();
     });
   }
 
-  // Save All Entries button
-  const saveAllEntriesBtn = document.getElementById('save-all-entries-btn');
-  if (saveAllEntriesBtn) {
-    saveAllEntriesBtn.addEventListener('click', async () => {
-      if (!currentExtensionId) {
-        showToast('Please select an extension first', 'error');
-        return;
-      }
 
-      setButtonLoading(saveAllEntriesBtn, true);
-
-      try {
-        const rows = Array.from(document.querySelectorAll('#customer-list .item-row'));
-        let saved = 0;
-        let failed = 0;
-
-        await Promise.all(rows.map(async (row) => {
-          const customerId = row.dataset.customerId;
-          const cowInput = row.querySelector('input[type="number"]');
-          const buffaloInput = row.querySelectorAll('input[type="number"]')[1];
-          const productSelect = row.querySelector('.product-select');
-
-          const cow = parseFloat(cowInput?.value) || 0;
-          const buffalo = parseFloat(buffaloInput?.value) || 0;
-          const productId = productSelect?.value || null;
-
-          try {
-            await saveMilkEntry(customerId, { cow, buffalo, productId });
-            saved += 1;
-          } catch (err) {
-            failed += 1;
-            console.error('Save all entry error for', customerId, err);
-          }
-        }));
-
-        showToast(`Saved entries for ${saved} customers${failed ? `, ${failed} failed` : ''}`);
-      } catch (err) {
-        console.error('Save all entries failed', err);
-        showToast('Failed to save all entries', 'error');
-      } finally {
-        setButtonLoading(saveAllEntriesBtn, false);
-      }
-    });
-  }
 
   // Refresh customers button
   if (refreshCustomersBtn) {
