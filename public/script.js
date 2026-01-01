@@ -1417,9 +1417,13 @@ if (document.body.dataset.page === 'extension') {
   if (extensionSelect) {
     extensionSelect.addEventListener('change', (e) => {
       currentExtensionId = e.target.value || null;
-      // Show/hide "Save All Invoices" button based on extension selection
+      // Show/hide "Save All Invoices" and "Print All Invoices" buttons based on extension selection
       if (saveAllInvoicesBtn) {
         saveAllInvoicesBtn.style.display = currentExtensionId ? 'block' : 'none';
+      }
+      const printBtn = document.getElementById('print-extension-invoices-btn');
+      if (printBtn) {
+        printBtn.style.display = currentExtensionId ? 'inline-block' : 'none';
       }
       loadCustomers();
     });
@@ -1556,6 +1560,27 @@ if (document.body.dataset.page === 'extension') {
         a.download = filename;
         document.body.appendChild(a);
         a.click();
+        a.remove();
+      } finally {
+        setButtonLoading(saveAllInvoicesBtn, false);
+      }
+    });
+  }
+
+  // Print All Invoices (redirect to invoice view for extension)
+  const printExtensionInvoicesBtn = document.getElementById('print-extension-invoices-btn');
+  if (printExtensionInvoicesBtn) {
+    printExtensionInvoicesBtn.addEventListener('click', () => {
+      if (!currentExtensionId) {
+        showToast('Please select an extension first', 'error');
+        return;
+      }
+      const todayISO = new Date().toISOString().split('T')[0];
+      window.location.href = `invoice.html?extensionId=${currentExtensionId}&date=${todayISO}`;
+    });
+  }
+        document.body.appendChild(a);
+        a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
@@ -1615,6 +1640,17 @@ if (document.body.dataset.page === 'invoice') {
   }
 
   const customerId = getCustomerIdFromQuery();
+  function getExtensionIdFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('extensionId');
+  }
+  function getDateFromQuery() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('date');
+  }
+
+  const extensionIdFromQuery = getExtensionIdFromQuery();
+  const dateFromQuery = getDateFromQuery();
 
   // Format date for display
   function formatDateForInvoice(dateString) {
