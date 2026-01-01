@@ -57,6 +57,85 @@ function hideModal(modal) {
   }, 300);
 }
 
+// Themed confirmation modal helper. Returns a Promise that resolves true if confirmed.
+function showConfirm({ title = 'Confirm', message = 'Are you sure?', okText = 'Delete', cancelText = 'Cancel' } = {}) {
+  return new Promise((resolve) => {
+    const backdrop = document.getElementById('confirm-modal-backdrop');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const messageEl = document.getElementById('confirm-modal-message');
+    const okBtn = document.getElementById('confirm-ok-btn');
+    const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+    // Fallback to native confirm if modal is missing
+    if (!backdrop || !okBtn || !cancelBtn || !messageEl || !titleEl) {
+      resolve(window.confirm(message));
+      return;
+    }
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    okBtn.textContent = okText;
+    cancelBtn.textContent = cancelText;
+
+    backdrop.style.display = 'flex';
+    // Force reflow to trigger CSS transition
+    void backdrop.offsetWidth;
+    backdrop.style.opacity = '1';
+
+    function cleanup() {
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      backdrop.removeEventListener('click', onBackdropClick);
+      window.removeEventListener('keydown', onKey);
+    }
+
+    function hide() {
+      backdrop.style.opacity = '0';
+      setTimeout(() => {
+        backdrop.style.display = 'none';
+      }, 200);
+    }
+
+    function onOk(e) {
+      e.preventDefault();
+      cleanup();
+      hide();
+      resolve(true);
+    }
+
+    function onCancel(e) {
+      e.preventDefault();
+      cleanup();
+      hide();
+      resolve(false);
+    }
+
+    function onBackdropClick(e) {
+      if (e.target === backdrop) {
+        cleanup();
+        hide();
+        resolve(false);
+      }
+    }
+
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        cleanup();
+        hide();
+        resolve(false);
+      }
+    }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    backdrop.addEventListener('click', onBackdropClick);
+    window.addEventListener('keydown', onKey);
+
+    // Focus the cancel button to avoid accidental deletes
+    cancelBtn.focus();
+  });
+}
+
 function formatAmount(amount) {
   if (typeof amount !== 'number') return '';
   return new Intl.NumberFormat(undefined, {
@@ -127,7 +206,8 @@ function buildItemRow(item) {
   deleteBtn.textContent = '🗑';
 
   deleteBtn.addEventListener('click', async () => {
-    if (!confirm('Delete this item?')) return;
+    const confirmed = await showConfirm({ title: 'Delete item', message: 'Delete this item?', okText: 'Delete', cancelText: 'Cancel' });
+    if (!confirmed) return;
     try {
       const res = await fetch(`${API_BASE}/${item._id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
@@ -414,7 +494,8 @@ if (document.body.dataset.page === 'dashboard') {
       document.querySelectorAll('.delete-product-btn').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const productId = btn.dataset.productId;
-          if (!confirm('Delete this product?')) return;
+          const confirmed = await showConfirm({ title: 'Delete product', message: 'Delete this product?', okText: 'Delete', cancelText: 'Cancel' });
+          if (!confirmed) return;
 
           try {
             const res = await fetch(`/api/products/${productId}`, { method: 'DELETE' });
@@ -952,7 +1033,14 @@ if (document.body.dataset.page === 'extension') {
         deleteInlineBtn.addEventListener('click', async (ev) => {
           ev.stopPropagation();
 
-          if (!confirm('Are you sure you want to delete this customer?\n\nThis action cannot be undone.')) return;
+          const confirmed = await showConfirm({
+            title: 'Delete customer',
+            message: 'Are you sure you want to delete this customer?\n\nThis action cannot be undone.',
+            okText: 'Delete',
+            cancelText: 'Cancel'
+          });
+
+          if (!confirmed) return;
 
           try {
             const res = await fetch(`/api/customers/${customer._id}`, { method: 'DELETE' });
@@ -1504,9 +1592,12 @@ document.addEventListener('click', async (e) => {
     return;
   }
 
-  const confirmDelete = confirm(
-    'Are you sure you want to delete this customer?\n\nThis action cannot be undone.'
-  );
+  const confirmDelete = await showConfirm({
+    title: 'Delete customer',
+    message: 'Are you sure you want to delete this customer?\n\nThis action cannot be undone.',
+    okText: 'Delete',
+    cancelText: 'Cancel'
+  });
 
   if (!confirmDelete) return;
 

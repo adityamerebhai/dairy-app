@@ -131,6 +131,21 @@
       </div>
     </div>
 
+    <!-- Confirm modal (styled to match app) -->
+    <div
+      id="confirm-modal-backdrop"
+      style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 60; align-items: center; justify-content: center; padding: 1rem; opacity: 0; transition: opacity 0.2s ease;"
+    >
+      <div class="card" style="max-width: 460px; width: 100%; margin: 0 auto; text-align: left;">
+        <h2 id="confirm-modal-title">Confirm</h2>
+        <p id="confirm-modal-message" style="color: var(--text-muted); margin-top: 0.4rem;">Are you sure?</p>
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+          <button id="confirm-cancel-btn" class="btn ghost-btn">Cancel</button>
+          <button id="confirm-ok-btn" class="btn danger-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
