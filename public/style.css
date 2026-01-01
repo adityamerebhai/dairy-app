@@ -1152,6 +1152,8 @@ html {
 /* Compact extension invoice styles */
 #invoice-extension-section .invoice-table {
   font-size: 11px;
+  table-layout: fixed;
+  width: 100%;
 }
 #invoice-extension-section .invoice-table thead th,
 #invoice-extension-section .invoice-table tbody td {
@@ -1160,17 +1162,35 @@ html {
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
+  line-height: 1.1;
 }
 #invoice-extension-section .invoice-table tbody td:nth-child(6) {
   max-width: 240px; /* products column */
 }
+
+/* Column width hints for compact view */
+#invoice-extension-section .invoice-table thead th:nth-child(1),
+#invoice-extension-section .invoice-table tbody td:nth-child(1) { width: 18%; }
+#invoice-extension-section .invoice-table thead th:nth-child(2),
+#invoice-extension-section .invoice-table tbody td:nth-child(2) { width: 10%; }
+#invoice-extension-section .invoice-table thead th:nth-child(3),
+#invoice-extension-section .invoice-table tbody td:nth-child(3) { width: 30%; }
+#invoice-extension-section .invoice-table thead th:nth-child(4),
+#invoice-extension-section .invoice-table tbody td:nth-child(4) { width: 6%; }
+#invoice-extension-section .invoice-table thead th:nth-child(5),
+#invoice-extension-section .invoice-table tbody td:nth-child(5) { width: 6%; }
+#invoice-extension-section .invoice-table thead th:nth-child(6),
+#invoice-extension-section .invoice-table tbody td:nth-child(6) { width: 18%; }
+#invoice-extension-section .invoice-table thead th:nth-child(7),
+#invoice-extension-section .invoice-table tbody td:nth-child(7) { width: 6%; }
+#invoice-extension-section .invoice-table thead th:nth-child(8),
+#invoice-extension-section .invoice-table tbody td:nth-child(8) { width: 6%; }
 
 /* Reduce spacing in footer totals */
 #invoice-extension-section .invoice-table tfoot th,
 #invoice-extension-section .invoice-table tfoot td {
   padding: 6px 8px;
 }
-
 /* When body has compact class, make global invoice font a bit smaller */
 body.invoice-compact .invoice-title { font-size: 1rem; }
 body.invoice-compact .invoice-table { font-size: 10px; }
@@ -1178,10 +1198,37 @@ body.invoice-compact .invoice-table { font-size: 10px; }
 /* Print-specific compact rules */
 @media print {
   body.invoice-compact .invoice-table { font-size: 9px; }
+  #invoice-extension-section .invoice-table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 9px;
+  }
   #invoice-extension-section .invoice-table thead th,
   #invoice-extension-section .invoice-table tbody td {
     padding: 4px 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.1;
   }
+  /* Column width hints for printing (percentages) */
+  #invoice-extension-section .invoice-table thead th:nth-child(1),
+  #invoice-extension-section .invoice-table tbody td:nth-child(1) { width: 12%; }
+  #invoice-extension-section .invoice-table thead th:nth-child(2),
+  #invoice-extension-section .invoice-table tbody td:nth-child(2) { width: 8%; }
+  #invoice-extension-section .invoice-table thead th:nth-child(3),
+  #invoice-extension-section .invoice-table tbody td:nth-child(3) { width: 25%; }
+  #invoice-extension-section .invoice-table thead th:nth-child(4),
+  #invoice-extension-section .invoice-table tbody td:nth-child(4) { width: 6%; }
+  #invoice-extension-section .invoice-table thead th:nth-child(5),
+  #invoice-extension-section .invoice-table tbody td:nth-child(5) { width: 6%; }
+  #invoice-extension-section .invoice-table thead th:nth-child(6),
+  #invoice-extension-section .invoice-table tbody td:nth-child(6) { width: 28%; }
+  #invoice-extension-section .invoice-table thead th:nth-child(7),
+  #invoice-extension-section .invoice-table tbody td:nth-child(7) { width: 8%; }
+  #invoice-extension-section .invoice-table thead th:nth-child(8),
+  #invoice-extension-section .invoice-table tbody td:nth-child(8) { width: 7%; }
+
   /* Avoid page breaks inside table rows */
   #invoice-extension-section .invoice-table tr { page-break-inside: avoid; }
 }
