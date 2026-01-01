@@ -1579,20 +1579,7 @@ if (document.body.dataset.page === 'extension') {
       window.location.href = `invoice.html?extensionId=${currentExtensionId}&date=${todayISO}`;
     });
   }
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
 
-        showToast('All invoices downloaded successfully!');
-      } catch (err) {
-        console.error('Error downloading invoices:', err);
-        showToast(err.message || 'Could not download invoices', 'error');
-      } finally {
-        setButtonLoading(saveAllInvoicesBtn, false);
-      }
-    });
-  }
 
   // Hide "Save All Invoices" button initially
   if (saveAllInvoicesBtn) {
