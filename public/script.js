@@ -1077,20 +1077,39 @@ if (document.body.dataset.page === 'extension') {
         saveBtn.textContent = 'Save';
         saveBtn.style.fontSize = '0.75rem';
         saveBtn.style.padding = '0.4rem 0.8rem';
-        // Hide explicit Save button - entries will be autosaved and carried forward automatically
-        saveBtn.style.display = 'none';
+        // Keep explicit Save button visible so user can explicitly commit today's entry
+        saveBtn.style.display = 'inline-flex';
+        saveBtn.setAttribute('aria-label', 'Save milk entry for today');
+
+        // Small status indicator next to save button
+        const saveStatus = document.createElement('span');
+        saveStatus.className = 'save-status';
+        saveStatus.style.fontSize = '0.78rem';
+        saveStatus.style.color = 'var(--text-muted)';
+        saveStatus.style.marginLeft = '0.4rem';
+        saveStatus.textContent = '';
+
         saveBtn.addEventListener('click', async () => {
           const cow = parseFloat(cowInput.value) || 0;
           const buffalo = parseFloat(buffaloInput.value) || 0;
           const productId = productSelect.value || null;
 
+          saveBtn.disabled = true;
+          saveStatus.textContent = 'Saving...';
+
           try {
             await saveMilkEntry(customer._id, { cow, buffalo, productId });
             flashSaved(saveBtn);
+            saveStatus.textContent = 'Saved';
+            setTimeout(() => { saveStatus.textContent = ''; }, 1200);
             showToast('Milk entry saved!');
           } catch (err) {
             console.error(err);
+            saveStatus.textContent = 'Failed';
+            setTimeout(() => { saveStatus.textContent = ''; }, 2000);
             showToast(err.message || 'Could not save milk entry', 'error');
+          } finally {
+            saveBtn.disabled = false;
           }
         });
 
@@ -1101,11 +1120,16 @@ if (document.body.dataset.page === 'extension') {
           const productId = productSelect.value || null;
 
           try {
+            saveStatus.textContent = 'Saving...';
             await saveMilkEntry(customer._id, { cow, buffalo, productId });
             // subtle feedback without noisy toasts
             flashSaved(saveBtn);
+            saveStatus.textContent = 'Saved';
+            setTimeout(() => { saveStatus.textContent = ''; }, 900);
           } catch (err) {
             console.error('Autosave error:', err);
+            saveStatus.textContent = 'Failed';
+            setTimeout(() => { saveStatus.textContent = ''; }, 1500);
             // showToast(err.message || 'Autosave failed', 'error');
           }
         }, 700);
@@ -1120,11 +1144,16 @@ if (document.body.dataset.page === 'extension') {
           const productId = productSelect.value || null;
 
           try {
+            saveStatus.textContent = 'Saving...';
             await saveMilkEntry(customer._id, { cow, buffalo, productId });
             flashSaved(saveBtn);
+            saveStatus.textContent = 'Saved';
+            setTimeout(() => { saveStatus.textContent = ''; }, 900);
             showToast('Product updated for today');
           } catch (err) {
             console.error(err);
+            saveStatus.textContent = 'Failed';
+            setTimeout(() => { saveStatus.textContent = ''; }, 1500);
             showToast(err.message || 'Could not update product', 'error');
           }
         });
@@ -1196,6 +1225,7 @@ if (document.body.dataset.page === 'extension') {
         });
 
         actions.appendChild(saveBtn);
+        actions.appendChild(saveStatus);
         actions.appendChild(editBtn);
         actions.appendChild(invoiceBtn);
         actions.appendChild(deleteInlineBtn);
