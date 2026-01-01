@@ -8,13 +8,6 @@ const emptyState = document.getElementById('empty-state');
 const refreshBtn = document.getElementById('refresh-btn');
 const toast = document.getElementById('toast');
 
-let deleteCustomerId = null;
-
-const deleteModal = document.getElementById('delete-confirm-modal');
-const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
-const deleteCancelBtn = document.getElementById('delete-cancel-btn');
-
-
 function showToast(message, type = 'success') {
   if (!toast) return;
   toast.textContent = message;
@@ -925,14 +918,21 @@ if (document.body.dataset.page === 'extension') {
         editBtn.textContent = 'Edit';
         editBtn.style.fontSize = '0.75rem';
         editBtn.style.padding = '0.4rem 0.8rem';
+
         editBtn.addEventListener('click', () => {
-          document.getElementById('customer-id').value = customer._id;
-          document.getElementById('customer-name').value = customer.name || '';
-          document.getElementById('customer-phone').value = customer.phone || '';
-          document.getElementById('customer-address').value = customer.address || '';
-          document.getElementById('customer-modal-title').textContent = 'Edit Customer';
-          showModal(customerModal);
-        });
+        document.getElementById('customer-id').value = customer._id;
+        document.getElementById('customer-name').value = customer.name || '';
+        document.getElementById('customer-phone').value = customer.phone || '';
+        document.getElementById('customer-address').value = customer.address || '';
+        document.getElementById('customer-modal-title').textContent = 'Edit Customer';
+
+        // ✅ SHOW DELETE BUTTON
+        const deleteBtn = document.getElementById('delete-customer-btn');
+        deleteBtn.style.display = 'inline-flex';
+        deleteBtn.dataset.id = customer._id;
+
+        showModal(customerModal);
+      });
 
         const invoiceBtn = document.createElement('button');
         invoiceBtn.className = 'btn ghost-btn';
@@ -946,18 +946,6 @@ if (document.body.dataset.page === 'extension') {
         actions.appendChild(saveBtn);
         actions.appendChild(editBtn);
         actions.appendChild(invoiceBtn);
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn danger-btn delete-customer-btn';
-        deleteBtn.textContent = 'Delete';
-        deleteBtn.style.fontSize = '0.75rem';
-        deleteBtn.style.padding = '0.4rem 0.8rem';
-
-        // store customer id
-        deleteBtn.dataset.id = customer._id;
-
-        actions.appendChild(deleteBtn);
-
 
         li.appendChild(main);
         li.appendChild(actions);
@@ -1470,54 +1458,51 @@ handle.addEventListener('click', () => {
   );
 });
 
-// ===============================
-// DELETE CUSTOMER (CUSTOM MODAL)
-// ===============================
-// Open delete popup
-document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.delete-customer-btn');
-  if (!btn) return;
 
-  deleteCustomerId = btn.dataset.id;
-  if (!deleteCustomerId) {
-    showToast('Invalid customer id');
+// ===============================
+// DELETE CUSTOMER (WITH CONFIRM)
+// ===============================
+document.addEventListener('click', async (e) => {
+  const deleteBtn = e.target.closest('.delete-customer-btn');
+  if (!deleteBtn) return;
+
+  const customerId = deleteBtn.dataset.id;
+  console.log('Deleting customer:', customerId);
+
+  if (!customerId) {
+    alert('Invalid customer id');
     return;
   }
 
-  document.getElementById('delete-confirm-modal').style.display = 'flex';
-});
+  const confirmDelete = confirm(
+    'Are you sure you want to delete this customer?\n\nThis action cannot be undone.'
+  );
 
-// Cancel delete
-document.getElementById('delete-cancel-btn').addEventListener('click', () => {
-  deleteCustomerId = null;
-  document.getElementById('delete-confirm-modal').style.display = 'none';
-});
-
-// Confirm delete
-document.getElementById('delete-confirm-btn').addEventListener('click', async () => {
-  if (!deleteCustomerId) return;
+  if (!confirmDelete) return;
 
   try {
-    const res = await fetch(`/api/customers/${deleteCustomerId}`, {
+    const res = await fetch(`/api/customers/${customerId}`, {
       method: 'DELETE',
     });
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Delete failed');
 
-    // Remove row from UI
-    const row = document
-      .querySelector(`.delete-customer-btn[data-id="${deleteCustomerId}"]`)
-      ?.closest('.item-row');
+    if (!res.ok) {
+      throw new Error(data.error || 'Delete failed');
+    }
 
-    if (row) row.remove();
+    const row = deleteBtn.closest('.item-row');
+    if (row) {
+      row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(20px)';
+      setTimeout(() => row.remove(), 300);
+    }
 
-    showToast('Customer deleted');
+    alert('Customer deleted successfully');
   } catch (err) {
-    console.error(err);
+    console.error('Delete error:', err);
     alert(err.message || 'Delete failed');
-  } finally {
-    deleteCustomerId = null;
-    document.getElementById('delete-confirm-modal').style.display = 'none';
   }
 });
+
