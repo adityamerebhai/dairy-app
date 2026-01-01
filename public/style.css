@@ -1148,3 +1148,40 @@ html {
   background: radial-gradient(circle at top left, #fca5a5, #dc2626);
   box-shadow: 0 8px 20px rgba(185, 28, 28, 0.35);
 }
+
+/* Compact extension invoice styles */
+#invoice-extension-section .invoice-table {
+  font-size: 11px;
+}
+#invoice-extension-section .invoice-table thead th,
+#invoice-extension-section .invoice-table tbody td {
+  padding: 6px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+#invoice-extension-section .invoice-table tbody td:nth-child(6) {
+  max-width: 240px; /* products column */
+}
+
+/* Reduce spacing in footer totals */
+#invoice-extension-section .invoice-table tfoot th,
+#invoice-extension-section .invoice-table tfoot td {
+  padding: 6px 8px;
+}
+
+/* When body has compact class, make global invoice font a bit smaller */
+body.invoice-compact .invoice-title { font-size: 1rem; }
+body.invoice-compact .invoice-table { font-size: 10px; }
+
+/* Print-specific compact rules */
+@media print {
+  body.invoice-compact .invoice-table { font-size: 9px; }
+  #invoice-extension-section .invoice-table thead th,
+  #invoice-extension-section .invoice-table tbody td {
+    padding: 4px 6px;
+  }
+  /* Avoid page breaks inside table rows */
+  #invoice-extension-section .invoice-table tr { page-break-inside: avoid; }
+}

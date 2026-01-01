@@ -1899,6 +1899,9 @@ if (document.body.dataset.page === 'invoice') {
       const invoiceCustEl2 = document.querySelector('.invoice-customer');
       if (invoiceCustEl2) invoiceCustEl2.style.display = 'none';
 
+      // Apply compact styling to body so print and display are smaller
+      document.body.classList.add('invoice-compact');
+
       // Wire print/download buttons to extension mode
       const excelBtn = document.getElementById('invoice-excel-btn');
       const printBtn = document.getElementById('invoice-print-btn');
@@ -1973,7 +1976,8 @@ if (document.body.dataset.page === 'invoice') {
     const targetDate = dateFromQuery || new Date().toISOString().split('T')[0];
     loadExtensionInvoices(extensionIdFromQuery, targetDate);
   } else {
-    loadCustomerDetails();
+    // Ensure compact class removed when not in extension mode
+    document.body.classList.remove('invoice-compact');
     loadMilkEntries();
   }
   loadMilkEntries();
