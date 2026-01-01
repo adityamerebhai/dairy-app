@@ -1170,21 +1170,27 @@ html {
 
 /* Column width hints for compact view */
 #invoice-extension-section .invoice-table thead th:nth-child(1),
-#invoice-extension-section .invoice-table tbody td:nth-child(1) { width: 18%; }
+#invoice-extension-section .invoice-table tbody td:nth-child(1) { width: 16%; }
 #invoice-extension-section .invoice-table thead th:nth-child(2),
-#invoice-extension-section .invoice-table tbody td:nth-child(2) { width: 10%; }
+#invoice-extension-section .invoice-table tbody td:nth-child(2) { width: 9%; }
 #invoice-extension-section .invoice-table thead th:nth-child(3),
-#invoice-extension-section .invoice-table tbody td:nth-child(3) { width: 30%; }
+#invoice-extension-section .invoice-table tbody td:nth-child(3) {
+  width: 40%;
+  /* Keep address on a single line and show full content */
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
 #invoice-extension-section .invoice-table thead th:nth-child(4),
 #invoice-extension-section .invoice-table tbody td:nth-child(4) { width: 6%; }
 #invoice-extension-section .invoice-table thead th:nth-child(5),
 #invoice-extension-section .invoice-table tbody td:nth-child(5) { width: 6%; }
 #invoice-extension-section .invoice-table thead th:nth-child(6),
-#invoice-extension-section .invoice-table tbody td:nth-child(6) { width: 18%; }
+#invoice-extension-section .invoice-table tbody td:nth-child(6) { width: 14%; }
 #invoice-extension-section .invoice-table thead th:nth-child(7),
-#invoice-extension-section .invoice-table tbody td:nth-child(7) { width: 6%; }
+#invoice-extension-section .invoice-table tbody td:nth-child(7) { width: 5%; }
 #invoice-extension-section .invoice-table thead th:nth-child(8),
-#invoice-extension-section .invoice-table tbody td:nth-child(8) { width: 6%; }
+#invoice-extension-section .invoice-table tbody td:nth-child(8) { width: 4%; }
 
 /* Reduce spacing in footer totals */
 #invoice-extension-section .invoice-table tfoot th,
@@ -1211,23 +1217,31 @@ body.invoice-compact .invoice-table { font-size: 10px; }
     text-overflow: ellipsis;
     line-height: 1.1;
   }
+
+  /* Make Address column wider and do not ellipsize it in print */
+  #invoice-extension-section .invoice-table thead th:nth-child(3),
+  #invoice-extension-section .invoice-table tbody td:nth-child(3) {
+    width: 40%;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
   /* Column width hints for printing (percentages) */
   #invoice-extension-section .invoice-table thead th:nth-child(1),
-  #invoice-extension-section .invoice-table tbody td:nth-child(1) { width: 12%; }
+  #invoice-extension-section .invoice-table tbody td:nth-child(1) { width: 16%; }
   #invoice-extension-section .invoice-table thead th:nth-child(2),
-  #invoice-extension-section .invoice-table tbody td:nth-child(2) { width: 8%; }
-  #invoice-extension-section .invoice-table thead th:nth-child(3),
-  #invoice-extension-section .invoice-table tbody td:nth-child(3) { width: 25%; }
+  #invoice-extension-section .invoice-table tbody td:nth-child(2) { width: 9%; }
   #invoice-extension-section .invoice-table thead th:nth-child(4),
   #invoice-extension-section .invoice-table tbody td:nth-child(4) { width: 6%; }
   #invoice-extension-section .invoice-table thead th:nth-child(5),
   #invoice-extension-section .invoice-table tbody td:nth-child(5) { width: 6%; }
   #invoice-extension-section .invoice-table thead th:nth-child(6),
-  #invoice-extension-section .invoice-table tbody td:nth-child(6) { width: 28%; }
+  #invoice-extension-section .invoice-table tbody td:nth-child(6) { width: 14%; }
   #invoice-extension-section .invoice-table thead th:nth-child(7),
-  #invoice-extension-section .invoice-table tbody td:nth-child(7) { width: 8%; }
+  #invoice-extension-section .invoice-table tbody td:nth-child(7) { width: 5%; }
   #invoice-extension-section .invoice-table thead th:nth-child(8),
-  #invoice-extension-section .invoice-table tbody td:nth-child(8) { width: 7%; }
+  #invoice-extension-section .invoice-table tbody td:nth-child(8) { width: 4%; }
 
   /* Avoid page breaks inside table rows */
   #invoice-extension-section .invoice-table tr { page-break-inside: avoid; }
