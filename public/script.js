@@ -943,9 +943,39 @@ if (document.body.dataset.page === 'extension') {
           window.location.href = `invoice.html?customerId=${customer._id}`;
         });
 
+        // Inline delete button beside Invoice
+        const deleteInlineBtn = document.createElement('button');
+        deleteInlineBtn.className = 'btn danger-btn delete-inline-btn';
+        deleteInlineBtn.textContent = 'Delete';
+        deleteInlineBtn.style.fontSize = '0.75rem';
+        deleteInlineBtn.style.padding = '0.4rem 0.8rem';
+        deleteInlineBtn.addEventListener('click', async (ev) => {
+          ev.stopPropagation();
+
+          if (!confirm('Are you sure you want to delete this customer?\n\nThis action cannot be undone.')) return;
+
+          try {
+            const res = await fetch(`/api/customers/${customer._id}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Delete failed');
+
+            // Animate and remove row
+            li.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            li.style.opacity = '0';
+            li.style.transform = 'translateX(20px)';
+            setTimeout(() => li.remove(), 300);
+
+            showToast('Customer deleted');
+          } catch (err) {
+            console.error('Delete error:', err);
+            showToast(err.message || 'Could not delete customer', 'error');
+          }
+        });
+
         actions.appendChild(saveBtn);
         actions.appendChild(editBtn);
         actions.appendChild(invoiceBtn);
+        actions.appendChild(deleteInlineBtn);
 
         li.appendChild(main);
         li.appendChild(actions);

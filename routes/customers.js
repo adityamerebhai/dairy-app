@@ -135,26 +135,9 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/customers/:id - delete customer
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!isValidObjectId(id)) {
-      return res.status(400).json({ error: 'Invalid customer id' });
-    }
-
-    const deleted = await Customer.findByIdAndDelete(id);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Customer not found' });
-    }
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(400).json({ error: 'Failed to delete customer', details: err.message });
-  }
-});
+// NOTE: The simple delete handler was removed to ensure deletions go through the archival
+// delete route below which archives the customer, removes related milk entries and
+// keeps a record in `DeletedCustomer` for audit/history.
 
 
 router.delete('/:id', async (req, res) => {
