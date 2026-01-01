@@ -27,6 +27,13 @@ const CustomerSchema = new Schema(
       required: false,
       index: true,
     },
+    // Optional permanent product to apply to this customer's daily entries automatically
+    permanentProductId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Product',
+      required: false,
+      default: null,
+    },
   },
   {
     timestamps: true,

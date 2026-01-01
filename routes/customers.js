@@ -5,6 +5,7 @@ const Extension = require('../models/Extension');
 const MilkEntry = require('../models/MilkEntry');
 const MilkEntryArchive = require('../models/MilkEntryArchive');
 const DeletedCustomer = require('../models/DeletedCustomer');
+const Product = require('../models/Product');
 
 const router = express.Router();
 
@@ -108,7 +109,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, phone, address, extensionId } = req.body;
+    const { name, phone, address, extensionId, permanentProductId } = req.body;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ error: 'Invalid customer id' });
@@ -118,9 +119,24 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid extensionId' });
     }
 
+    if (permanentProductId !== undefined && permanentProductId !== null && !isValidObjectId(permanentProductId)) {
+      return res.status(400).json({ error: 'Invalid permanentProductId' });
+    }
+
+    // If permanentProductId is provided, validate it exists
+    if (permanentProductId) {
+      const prod = await Product.findById(permanentProductId);
+      if (!prod) {
+        return res.status(400).json({ error: 'Product not found' });
+      }
+    }
+
+    const updateFields = { name, phone, address, extensionId };
+    if (permanentProductId !== undefined) updateFields.permanentProductId = permanentProductId;
+
     const updated = await Customer.findByIdAndUpdate(
       id,
-      { name, phone, address, extensionId },
+      updateFields,
       { new: true, runValidators: true }
     );
 
