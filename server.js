@@ -19,6 +19,9 @@ app.use(express.json());
 // Serve frontend
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Serve top-level images folder so <img src="/images/..."> works when images are stored outside `public`
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 // Routes
 app.use('/api/extensions', require('./routes/extensions'));
 app.use('/api/customers', require('./routes/customers'));

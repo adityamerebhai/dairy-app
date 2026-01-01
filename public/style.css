@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
 :root {
   --bg: #f3f4f0;
   --bg-elevated: #ffffff;
@@ -44,11 +46,13 @@ body {
 }
 
 .app-title {
-  margin: 0;
-  font-size: 1.1rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #1f2933;
+  top-margin: 0;
+  font-family: "Open Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
 }
 .app-title2 {
   margin: 0;
@@ -64,6 +68,26 @@ body {
     display: flex;
     flex-direction: column; /* 👈 this puts items vertically */
     align-items: flex-start; /* or center if you want */
+}
+
+/* Center logo between header content and nav */
+.header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 1rem;
+}
+.app-logo-center {
+  width: 80px;
+  height: auto;
+  border-radius: 8px;
+}
+
+/* hide center logo on small screens */
+@media (max-width: 720px) {
+  .header-center {
+    display: none;
+  }
 }
 
 .nav-links {
@@ -1245,4 +1269,10 @@ body.invoice-compact .invoice-table { font-size: 10px; }
 
   /* Avoid page breaks inside table rows */
   #invoice-extension-section .invoice-table tr { page-break-inside: avoid; }
+}
+
+.app-logo-center {
+  height: 60px;
+  width: auto;
+  display: block;
 }
