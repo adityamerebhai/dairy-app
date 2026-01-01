@@ -929,10 +929,9 @@ if (document.body.dataset.page === 'extension') {
             const carryResults = await Promise.allSettled(
               toCarry.map(async (c) => {
                 const recent = milkMostRecentMap[c._id];
-                const cow = recent ? (recent.cow || 0) : 0;
-                const buffalo = recent ? (recent.buffalo || 0) : 0;
-                // For product: prefer customer's permanentProductId; otherwise do NOT copy previous day's product (default to null)
-                const productId = c.permanentProductId || null;
+                const cow = recent.cow || 0;
+                const buffalo = recent.buffalo || 0;
+                const productId = (recent.products && recent.products[0] && recent.products[0].productId) || null;
                 try {
                   await saveMilkEntry(c._id, { date: todayISO, cow, buffalo, productId });
                   return { customerId: c._id, ok: true };
@@ -1034,13 +1033,6 @@ if (document.body.dataset.page === 'extension') {
         const productLabel = document.createElement('label');
         productLabel.textContent = 'Product:';
         productLabel.style.fontSize = '0.8rem';
-        // Small hint to indicate daily reset behavior (unless permanent product is set)
-        const productHint = document.createElement('span');
-        productHint.textContent = ' (resets daily)';
-        productHint.style.fontSize = '0.65rem';
-        productHint.style.color = 'var(--text-muted)';
-        productHint.style.marginLeft = '0.35rem';
-        productLabel.appendChild(productHint);
         const productSelect = document.createElement('select');
         productSelect.style.width = '140px';
         productSelect.style.minWidth = '140px';
@@ -1056,28 +1048,14 @@ if (document.body.dataset.page === 'extension') {
           productSelect.appendChild(option);
         });
 
-        // Pre-populate product dropdown with today's entry product if exists
-        if (todayEntry && todayEntry.products && todayEntry.products.length > 0) {
-          const existingProduct = todayEntry.products[0];
-          if (existingProduct.productId) {
-            productSelect.value = existingProduct.productId;
-          }
-        } else if (customer.permanentProductId) {
-          // If no product selected for today and customer has a permanent product, pre-select it
-          productSelect.value = customer.permanentProductId;
-
-          // If today's entry exists but had no product, apply permanent product immediately
-          if (todayEntry && (!todayEntry.products || todayEntry.products.length === 0)) {
-            try {
-              const cowNow = todayEntry.cow || 0;
-              const buffaloNow = todayEntry.buffalo || 0;
-              const todayISO = new Date().toISOString().split('T')[0];
-              await saveMilkEntry(customer._id, { date: todayISO, cow: cowNow, buffalo: buffaloNow, productId: customer.permanentProductId });
-              // subtle status feedback
-            } catch (err) {
-              console.error('Could not apply permanent product to existing today entry:', err);
-            }
-          }
+        // Determine which product to show: today's entry product > customer's permanent default > empty
+        const todayProductId = (todayEntry && todayEntry.products && todayEntry.products.length > 0 && todayEntry.products[0].productId) ? todayEntry.products[0].productId : null;
+        const permanentProductId = customer.defaultProductPermanent && customer.defaultProductId ? customer.defaultProductId : null;
+        const effectiveProductId = todayProductId || permanentProductId || '';
+        if (effectiveProductId) {
+          productSelect.value = effectiveProductId;
+        } else {
+          productSelect.value = '';
         }
 
         inputsDiv.appendChild(cowLabel);
@@ -1248,91 +1226,87 @@ if (document.body.dataset.page === 'extension') {
           }
         });
 
-        actions.appendChild(saveBtn);
-        actions.appendChild(saveStatus);
-
         // Permanent product toggle
         const permBtn = document.createElement('button');
-        permBtn.className = 'btn ghost-btn';
+        permBtn.className = 'btn ghost-btn permanent-btn';
+        permBtn.textContent = customer.defaultProductPermanent ? 'Permanent ✓' : 'Permanent';
         permBtn.style.fontSize = '0.75rem';
-        permBtn.style.padding = '0.35rem 0.7rem';
-        permBtn.style.marginLeft = '0.25rem';
-        // Show product name if available
-        if (customer.permanentProductId) {
-          const prod = allProducts.find(p => String(p._id) === String(customer.permanentProductId));
-          permBtn.textContent = prod ? `Permanent: ${prod.name}` : 'Permanent ✓';
-        } else {
-          permBtn.textContent = 'Make Permanent';
+        permBtn.style.padding = '0.4rem 0.8rem';
+        if (customer.defaultProductPermanent) {
+          permBtn.classList.remove('ghost-btn');
+          permBtn.classList.add('primary-btn');
         }
 
         permBtn.addEventListener('click', async () => {
-          // Toggle permanent: set current selected product as permanent, or unset
-          const currentPerm = customer.permanentProductId || null;
+          const isPermanent = !!customer.defaultProductPermanent;
+          // toggling on requires a product to be selected
           const selectedProduct = productSelect.value || null;
+          if (!isPermanent && !selectedProduct) {
+            showToast('Select a product first to make it permanent', 'error');
+            return;
+          }
 
-          if (currentPerm) {
-            const confirmed = await showConfirm({ title: 'Unset permanent product', message: 'Unset permanent product for this customer?', okText: 'Unset', cancelText: 'Cancel' });
-            if (!confirmed) return;
-            try {
-              const res = await fetch(`/api/customers/${customer._id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ permanentProductId: null }),
-              });
-              if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || 'Failed to unset permanent product');
-              }
-              customer.permanentProductId = null;
-              permBtn.textContent = 'Make Permanent';
-              showToast('Permanent product unset');
-            } catch (err) {
-              console.error(err);
-              showToast(err.message || 'Could not unset permanent product', 'error');
+          permBtn.disabled = true;
+          setButtonLoading(permBtn, true);
+
+          try {
+            const body = {
+              defaultProductId: isPermanent ? null : selectedProduct,
+              defaultProductPermanent: !isPermanent,
+            };
+            const res = await fetch(`/api/customers/${customer._id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.error || 'Update failed');
             }
-          } else {
-            if (!selectedProduct) {
-              showToast('Please select a product to make permanent', 'error');
-              return;
-            }
-            try {
-              const res = await fetch(`/api/customers/${customer._id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ permanentProductId: selectedProduct }),
-              });
-              if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || 'Failed to set permanent product');
-              }
-              customer.permanentProductId = selectedProduct;
-              // Update permBtn to show product name
-              {
-                const prod = allProducts.find(p => String(p._id) === String(selectedProduct));
-                permBtn.textContent = prod ? `Permanent: ${prod.name}` : 'Permanent ✓';
-              }
-              // Also immediately save today's entry with this product
+
+            const updated = await res.json();
+            customer.defaultProductPermanent = updated.defaultProductPermanent;
+            customer.defaultProductId = updated.defaultProductId || null;
+
+            if (customer.defaultProductPermanent) {
+              permBtn.classList.remove('ghost-btn');
+              permBtn.classList.add('primary-btn');
+              permBtn.textContent = 'Permanent ✓';
+              // save today's entry with product immediately
+              const cow = parseFloat(cowInput.value) || 0;
+              const buffalo = parseFloat(buffaloInput.value) || 0;
               try {
-                const cowNow = parseFloat(cowInput.value) || 0;
-                const buffaloNow = parseFloat(buffaloInput.value) || 0;
-                const today = new Date();
-                const todayISO = today.toISOString().split('T')[0];
-                await saveMilkEntry(customer._id, { date: todayISO, cow: cowNow, buffalo: buffaloNow, productId: selectedProduct });
-                showToast('Permanent product set and applied for today');
-              } catch (err2) {
-                console.error('Could not apply permanent product to today:', err2);
-                showToast('Permanent product set (failed to apply to today)', 'error');
+                await saveMilkEntry(customer._id, { cow, buffalo, productId: customer.defaultProductId });
+                saveStatus.textContent = 'Saved';
+                setTimeout(() => { saveStatus.textContent = ''; }, 900);
+              } catch (err) {
+                console.error('Failed to save entry after setting permanent:', err);
+                showToast('Saved permanent product, but failed to save today entry', 'error');
               }
-            } catch (err) {
-              console.error(err);
-              showToast(err.message || 'Could not set permanent product', 'error');
+            } else {
+              permBtn.classList.remove('primary-btn');
+              permBtn.classList.add('ghost-btn');
+              permBtn.textContent = 'Permanent';
             }
+
+            showToast(customer.defaultProductPermanent ? 'Permanent product set' : 'Permanent product cleared');
+          } catch (err) {
+            console.error('Failed to update permanent product:', err);
+            showToast(err.message || 'Could not update permanent product', 'error');
+          } finally {
+            setButtonLoading(permBtn, false);
+            permBtn.disabled = false;
           }
         });
 
+        actions.appendChild(saveBtn);
+        actions.appendChild(saveStatus);
+        actions.appendChild(permBtn);
         actions.appendChild(editBtn);
         actions.appendChild(invoiceBtn);
-        actions.appendChild(permBtn);
+        actions.appendChild(deleteInlineBtn);
+
         li.appendChild(main);
         li.appendChild(actions);
         customerList.appendChild(li);

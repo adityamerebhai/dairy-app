@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Customer = require('../models/Customer');
 const Extension = require('../models/Extension');
+const Product = require('../models/Product');
 const MilkEntry = require('../models/MilkEntry');
 const MilkEntryArchive = require('../models/MilkEntryArchive');
 const DeletedCustomer = require('../models/DeletedCustomer');
@@ -109,7 +110,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, phone, address, extensionId, permanentProductId } = req.body;
+    const { name, phone, address, extensionId, defaultProductId, defaultProductPermanent } = req.body;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ error: 'Invalid customer id' });
@@ -119,20 +120,21 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid extensionId' });
     }
 
-    if (permanentProductId !== undefined && permanentProductId !== null && !isValidObjectId(permanentProductId)) {
-      return res.status(400).json({ error: 'Invalid permanentProductId' });
+    if (defaultProductId !== undefined && defaultProductId !== null && !isValidObjectId(defaultProductId)) {
+      return res.status(400).json({ error: 'Invalid defaultProductId' });
     }
 
-    // If permanentProductId is provided, validate it exists
-    if (permanentProductId) {
-      const prod = await Product.findById(permanentProductId);
+    // If defaultProductId is provided, validate it exists
+    if (defaultProductId) {
+      const prod = await Product.findById(defaultProductId);
       if (!prod) {
         return res.status(400).json({ error: 'Product not found' });
       }
     }
 
     const updateFields = { name, phone, address, extensionId };
-    if (permanentProductId !== undefined) updateFields.permanentProductId = permanentProductId;
+    if (defaultProductId !== undefined) updateFields.defaultProductId = defaultProductId || null;
+    if (defaultProductPermanent !== undefined) updateFields.defaultProductPermanent = !!defaultProductPermanent;
 
     const updated = await Customer.findByIdAndUpdate(
       id,

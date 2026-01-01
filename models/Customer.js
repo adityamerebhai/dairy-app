@@ -27,12 +27,16 @@ const CustomerSchema = new Schema(
       required: false,
       index: true,
     },
-    // Optional permanent product to apply to this customer's daily entries automatically
-    permanentProductId: {
+    // Default product that can be pinned per-customer
+    defaultProductId: {
       type: Schema.Types.ObjectId,
       ref: 'Product',
       required: false,
       default: null,
+    },
+    defaultProductPermanent: {
+      type: Boolean,
+      default: false,
     },
   },
   {
