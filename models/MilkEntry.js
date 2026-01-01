@@ -43,7 +43,13 @@ const MilkEntrySchema = new Schema(
           type: String,
           trim: true,
         },
+        quantity: {
+          type: Number,
+          default: 0,
+          min: 0,
+        },
         cost: {
+          // total cost = unit cost * quantity
           type: Number,
           min: 0,
           default: 0,

@@ -784,9 +784,9 @@ if (document.body.dataset.page === 'extension') {
   }
 
   // Save a milk entry for a customer (used by save button, autosave and save-all)
-  async function saveMilkEntry(customerId, { date = null, cow = 0, buffalo = 0, productId = null } = {}) {
+  async function saveMilkEntry(customerId, { date = null, cow = 0, buffalo = 0, productId = null, productQuantity = 0 } = {}) {
     const today = date || new Date().toISOString().split('T')[0];
-    const payload = { date: today, cow, buffalo, productId };
+    const payload = { date: today, cow, buffalo, productId, productQuantity };
 
     const res = await fetch(`/api/milk-entries/customer/${customerId}`, {
       method: 'POST',
@@ -933,7 +933,8 @@ if (document.body.dataset.page === 'extension') {
                 const buffalo = recent.buffalo || 0;
                 const productId = (recent.products && recent.products[0] && recent.products[0].productId) || null;
                 try {
-                  await saveMilkEntry(c._id, { date: todayISO, cow, buffalo, productId });
+                  const productQty = (recent.products && recent.products[0] && (recent.products[0].quantity || 0)) || 0;
+                  await saveMilkEntry(c._id, { date: todayISO, cow, buffalo, productId, productQuantity: productQty });
                   return { customerId: c._id, ok: true };
                 } catch (err) {
                   return { customerId: c._id, ok: false, error: err.message };
@@ -1065,6 +1066,28 @@ if (document.body.dataset.page === 'extension') {
         inputsDiv.appendChild(productLabel);
         inputsDiv.appendChild(productSelect);
 
+        const qtyLabel = document.createElement('label');
+        qtyLabel.textContent = 'Kg:';
+        qtyLabel.style.fontSize = '0.8rem';
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'number';
+        qtyInput.min = '0';
+        qtyInput.step = '0.1';
+        qtyInput.placeholder = '0';
+        qtyInput.style.width = '80px';
+        qtyInput.style.padding = '0.4rem';
+
+        // Pre-populate quantity from today's entry if present
+        if (todayEntry && todayEntry.products && todayEntry.products.length > 0) {
+          const existingProduct = todayEntry.products[0];
+          if (existingProduct && existingProduct.quantity !== undefined && existingProduct.quantity !== null) {
+            qtyInput.value = existingProduct.quantity;
+          }
+        }
+
+        inputsDiv.appendChild(qtyLabel);
+        inputsDiv.appendChild(qtyInput);
+
         main.appendChild(nameDiv);
         main.appendChild(inputsDiv);
 
@@ -1095,12 +1118,13 @@ if (document.body.dataset.page === 'extension') {
           const cow = parseFloat(cowInput.value) || 0;
           const buffalo = parseFloat(buffaloInput.value) || 0;
           const productId = productSelect.value || null;
+          const productQuantity = parseFloat(qtyInput.value) || 0;
 
           saveBtn.disabled = true;
           saveStatus.textContent = 'Saving...';
 
           try {
-            await saveMilkEntry(customer._id, { cow, buffalo, productId });
+            await saveMilkEntry(customer._id, { cow, buffalo, productId, productQuantity });
             flashSaved(saveBtn);
             saveStatus.textContent = 'Saved';
             setTimeout(() => { saveStatus.textContent = ''; }, 1200);
@@ -1120,10 +1144,11 @@ if (document.body.dataset.page === 'extension') {
           const cow = parseFloat(cowInput.value) || 0;
           const buffalo = parseFloat(buffaloInput.value) || 0;
           const productId = productSelect.value || null;
+          const productQuantity = parseFloat(qtyInput.value) || 0;
 
           try {
             saveStatus.textContent = 'Saving...';
-            await saveMilkEntry(customer._id, { cow, buffalo, productId });
+            await saveMilkEntry(customer._id, { cow, buffalo, productId, productQuantity });
             // subtle feedback without noisy toasts
             flashSaved(saveBtn);
             saveStatus.textContent = 'Saved';
@@ -1648,12 +1673,13 @@ if (document.body.dataset.page === 'invoice') {
         if (entry.products && Array.isArray(entry.products) && entry.products.length > 0) {
           entry.products.forEach((product) => {
             const cost = product.cost || 0;
+            const qty = product.quantity || 0;
             productAmount += cost;
             if (product.productName) {
-              productNames.push(`${product.productName} (₹${cost.toFixed(2)})`);
+              productNames.push(`${product.productName} (${qty}kg, ₹${cost.toFixed(2)})`);
             } else if (product.productId) {
               // Fallback: if productName is missing, try to show productId
-              productNames.push(`Product (₹${cost.toFixed(2)})`);
+              productNames.push(`Product (${qty}kg, ₹${cost.toFixed(2)})`);
             }
           });
         }

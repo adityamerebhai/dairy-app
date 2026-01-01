@@ -49,7 +49,7 @@ router.get('/', async (req, res) => {
 router.post('/customer/:customerId', async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { date, cow, buffalo, productId } = req.body;
+    const { date, cow, buffalo, productId, productQuantity } = req.body;
 
     if (!isValidObjectId(customerId)) {
       return res.status(400).json({ error: 'Invalid customerId' });
@@ -60,19 +60,22 @@ router.post('/customer/:customerId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid date' });
     }
 
-    // Prepare products array
+    // Prepare products array (supports quantity)
     let products = [];
     if (productId && isValidObjectId(productId) && String(productId).trim() !== '') {
       const product = await Product.findById(productId);
+      const qty = Number(productQuantity) || 0;
       if (product) {
+        const totalCost = (product.cost || 0) * qty;
         products = [
           {
             productId: product._id,
             productName: product.name,
-            cost: product.cost || 0,
+            quantity: qty,
+            cost: totalCost,
           },
         ];
-        console.log('Saving product with milk entry:', { productId: product._id, productName: product.name, cost: product.cost });
+        console.log('Saving product with milk entry:', { productId: product._id, productName: product.name, quantity: qty, cost: totalCost });
       } else {
         console.log('Product not found for productId:', productId);
       }
@@ -111,7 +114,7 @@ router.post('/customer/:customerId', async (req, res) => {
 router.put('/customer/:customerId/date/:date', async (req, res) => {
   try {
     const { customerId, date } = req.params;
-    const { cow, buffalo, productId } = req.body;
+    const { cow, buffalo, productId, productQuantity } = req.body;
 
     if (!isValidObjectId(customerId)) {
       return res.status(400).json({ error: 'Invalid customerId' });
@@ -122,19 +125,22 @@ router.put('/customer/:customerId/date/:date', async (req, res) => {
       return res.status(400).json({ error: 'Invalid date' });
     }
 
-    // Prepare products array
+    // Prepare products array (supports quantity)
     let products = [];
     if (productId && isValidObjectId(productId) && String(productId).trim() !== '') {
       const product = await Product.findById(productId);
+      const qty = Number(productQuantity) || 0;
       if (product) {
+        const totalCost = (product.cost || 0) * qty;
         products = [
           {
             productId: product._id,
             productName: product.name,
-            cost: product.cost || 0,
+            quantity: qty,
+            cost: totalCost,
           },
         ];
-        console.log('Updating product with milk entry:', { productId: product._id, productName: product.name, cost: product.cost });
+        console.log('Updating product with milk entry:', { productId: product._id, productName: product.name, quantity: qty, cost: totalCost });
       } else {
         console.log('Product not found for productId:', productId);
       }
@@ -216,15 +222,16 @@ router.get('/customer/:customerId/excel', async (req, res) => {
       const cowAmount = cow * cowPrice;
       const buffaloAmount = buffalo * buffaloPrice;
 
-      // Calculate product amount and names
+      // Calculate product amount and names (include quantity)
       let productAmount = 0;
       let productNames = [];
       if (e.products && Array.isArray(e.products) && e.products.length > 0) {
         e.products.forEach((product) => {
           const cost = product.cost || 0;
+          const qty = product.quantity || 0;
           productAmount += cost;
           if (product.productName) {
-            productNames.push(`${product.productName} (₹${cost.toFixed(2)})`);
+            productNames.push(`${product.productName} (${qty}kg, ₹${cost.toFixed(2)})`);
           }
         });
       }
@@ -369,15 +376,16 @@ router.get('/extension/:extensionId/download-all', async (req, res) => {
         const cowAmount = cow * cowPrice;
         const buffaloAmount = buffalo * buffaloPrice;
 
-        // Calculate product amount and names
+        // Calculate product amount and names (include quantity)
         let productAmount = 0;
         let productNames = [];
         if (e.products && Array.isArray(e.products) && e.products.length > 0) {
           e.products.forEach((product) => {
             const cost = product.cost || 0;
+            const qty = product.quantity || 0;
             productAmount += cost;
             if (product.productName) {
-              productNames.push(`${product.productName} (₹${cost.toFixed(2)})`);
+              productNames.push(`${product.productName} (${qty}kg, ₹${cost.toFixed(2)})`);
             }
           });
         }
