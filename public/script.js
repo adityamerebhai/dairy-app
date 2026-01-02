@@ -756,6 +756,15 @@ if (document.body.dataset.page === 'dashboard') {
   });
   loadDailySales();
 
+  // Utility: debounce (dashboard scope)
+  function debounce(fn, wait = 600) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fn.apply(this, args), wait);
+    };
+  }
+
   // === Remarks (dashboard) ===
   const remarkExtensionsContainer = document.getElementById('remark-extensions-container');
   const remarkCustomersList = document.getElementById('remark-customers-list');
