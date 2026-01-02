@@ -759,7 +759,9 @@ if (document.body.dataset.page === 'dashboard') {
   // === Remarks (dashboard) ===
   const remarkExtensionsContainer = document.getElementById('remark-extensions-container');
   const remarkCustomersList = document.getElementById('remark-customers-list');
+  const remarkCustomerSearchInput = document.getElementById('remark-customer-search-input');
   let remarkSelectedExtension = null;
+  let remarkLastLoadedCustomers = [];
 
   // Load extensions and render as small buttons
   async function loadRemarkExtensions() {
@@ -783,7 +785,9 @@ if (document.body.dataset.page === 'dashboard') {
           Array.from(remarkExtensionsContainer.children).forEach(c => c.classList && c.classList.remove('active-ext'));
           btn.classList.add('active-ext');
           remarkSelectedExtension = ext._id;
-          loadRemarkCustomers(ext._id);
+          // Clear search when changing extension
+          if (remarkCustomerSearchInput) remarkCustomerSearchInput.value = '';
+          loadRemarkCustomers(ext._id, false);
         });
         remarkExtensionsContainer.appendChild(btn);
       });
@@ -793,7 +797,7 @@ if (document.body.dataset.page === 'dashboard') {
     }
   }
 
-  async function loadRemarkCustomers(extensionId) {
+  async function loadRemarkCustomers(extensionId, useCache = false) {
     if (!extensionId) {
       remarkCustomersList.innerHTML = '<p class="empty-state">Select an extension to view its customers.</p>';
       return;
@@ -801,18 +805,34 @@ if (document.body.dataset.page === 'dashboard') {
 
     remarkCustomersList.innerHTML = '<p class="empty-state">Loading customers...</p>';
     try {
-      const res = await fetch(`/api/customers/extension/${extensionId}`);
-      if (!res.ok) throw new Error('Failed to fetch customers');
-      const customers = await res.json();
+      let customers;
+      if (useCache && remarkLastLoadedCustomers && remarkLastLoadedCustomers.length) {
+        customers = remarkLastLoadedCustomers;
+      } else {
+        const res = await fetch(`/api/customers/extension/${extensionId}`);
+        if (!res.ok) throw new Error('Failed to fetch customers');
+        customers = await res.json();
+        remarkLastLoadedCustomers = customers;
+      }
 
-      if (!customers.length) {
-        remarkCustomersList.innerHTML = '<p class="empty-state">No customers in this extension.</p>';
+      const query = (remarkCustomerSearchInput?.value || '').trim().toLowerCase();
+      const filteredCustomers = query
+        ? customers.filter((c) => {
+            const name = (c.name || '').toLowerCase();
+            const addr = (c.address || '').toLowerCase();
+            const phone = (c.phone || '').toLowerCase();
+            return name.includes(query) || addr.includes(query) || phone.includes(query);
+          })
+        : customers;
+
+      if (filteredCustomers.length === 0) {
+        remarkCustomersList.innerHTML = `<p class="empty-state">${query ? 'No customers match your search.' : 'No customers in this extension.'}</p>`;
         return;
       }
 
       // Render list
       remarkCustomersList.innerHTML = '';
-      customers.forEach((c) => {
+      filteredCustomers.forEach((c) => {
         const row = document.createElement('div');
         row.className = 'remark-row';
         row.style.borderBottom = '1px solid var(--border-subtle)';
@@ -864,6 +884,9 @@ if (document.body.dataset.page === 'dashboard') {
               const err = await res.json().catch(() => ({}));
               throw new Error(err.error || 'Save failed');
             }
+            // Update cache so subsequent searches reflect the change
+            const idx = remarkLastLoadedCustomers.findIndex(x => String(x._id) === String(c._id));
+            if (idx >= 0) remarkLastLoadedCustomers[idx].remark = text;
             showToast('Remark saved');
           } catch (err) {
             console.error(err);
@@ -886,6 +909,12 @@ if (document.body.dataset.page === 'dashboard') {
       console.error(err);
       remarkCustomersList.innerHTML = '<p class="empty-state">Could not load customers</p>';
     }
+  }
+
+  // Hook up search input (debounced) to filter remark customer list
+  if (remarkCustomerSearchInput) {
+    const onSearch = debounce(() => loadRemarkCustomers(remarkSelectedExtension, true), 250);
+    remarkCustomerSearchInput.addEventListener('input', onSearch);
   }
 
   // Load remark extensions on dashboard init
