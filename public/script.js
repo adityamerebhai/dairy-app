@@ -770,9 +770,11 @@ if (document.body.dataset.page === 'extension') {
   const customerCancelBtn = document.getElementById('customer-cancel-btn');
   const customerList = document.getElementById('customer-list');
   const noExtensionSelected = document.getElementById('no-extension-selected');
+  const customerSearchInput = document.getElementById('customer-search-input');
 
   let currentExtensionId = null;
   let allProducts = []; // Cache products
+  let lastLoadedAllCustomers = []; // cache of last fetched customer list for current extension
 
   // Utility: debounce
   function debounce(fn, wait = 600) {
