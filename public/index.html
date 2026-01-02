@@ -143,8 +143,9 @@
         <section class="card" id="remarks-card">
           <div class="card-header" style="align-items: center; display:flex; gap:0.5rem;">
             <h2 style="margin:0">Remarks</h2>
-            <input id="remark-customer-search-input" type="search" placeholder="Search name, address or phone" style="margin-left:auto; padding:0.45rem 0.6rem; border-radius:8px; border:1px solid var(--border-subtle); width:260px;" />
-            <div id="remark-extensions-container" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-left:0.5rem;"></div>
+            <div id="remark-extensions-container" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-left:auto;"></div>
+            <!-- Search is hidden until an extension is selected -->
+            <input id="remark-customer-search-input" type="search" placeholder="Search name, address or phone" style="display:none; margin-left:0.5rem; padding:0.45rem 0.6rem; border-radius:8px; border:1px solid var(--border-subtle); width:260px;" />
           </div>
           <p style="font-size:0.9rem; color:var(--text-muted); margin-top:0.5rem;">Select an extension to view customers and add remarks about customers.</p>
           <div id="remark-customers-list" style="margin-top:1rem;">

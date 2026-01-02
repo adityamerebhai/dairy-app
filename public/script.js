@@ -781,12 +781,31 @@ if (document.body.dataset.page === 'dashboard') {
         btn.style.fontSize = '0.9rem';
         btn.dataset.id = ext._id;
         btn.addEventListener('click', () => {
-          // Toggle active
+          // Toggle active: if already active, deselect
+          const wasActive = btn.classList.contains('active-ext');
           Array.from(remarkExtensionsContainer.children).forEach(c => c.classList && c.classList.remove('active-ext'));
+
+          if (wasActive) {
+            // Deselect
+            remarkSelectedExtension = null;
+            if (remarkCustomerSearchInput) {
+              remarkCustomerSearchInput.style.display = 'none';
+              remarkCustomerSearchInput.value = '';
+            }
+            loadRemarkCustomers(null);
+            return;
+          }
+
+          // Select new extension
           btn.classList.add('active-ext');
           remarkSelectedExtension = ext._id;
-          // Clear search when changing extension
-          if (remarkCustomerSearchInput) remarkCustomerSearchInput.value = '';
+          // Show search when an extension is selected
+          if (remarkCustomerSearchInput) {
+            remarkCustomerSearchInput.style.display = 'inline-block';
+            remarkCustomerSearchInput.value = '';
+            remarkCustomerSearchInput.focus();
+          }
+
           loadRemarkCustomers(ext._id, false);
         });
         remarkExtensionsContainer.appendChild(btn);
