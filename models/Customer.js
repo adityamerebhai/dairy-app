@@ -21,6 +21,13 @@ const CustomerSchema = new Schema(
       trim: true,
       maxlength: 255,
     },
+    // Free-form remark/notes about the customer
+    remark: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+      default: ''
+    },
     extensionId: {
       type: Schema.Types.ObjectId,
       ref: 'Extension',

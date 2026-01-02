@@ -755,6 +755,141 @@ if (document.body.dataset.page === 'dashboard') {
     disableEditMode();
   });
   loadDailySales();
+
+  // === Remarks (dashboard) ===
+  const remarkExtensionsContainer = document.getElementById('remark-extensions-container');
+  const remarkCustomersList = document.getElementById('remark-customers-list');
+  let remarkSelectedExtension = null;
+
+  // Load extensions and render as small buttons
+  async function loadRemarkExtensions() {
+    try {
+      const res = await fetch('/api/extensions');
+      if (!res.ok) throw new Error('Failed to fetch extensions');
+      const extensions = await res.json();
+      remarkExtensionsContainer.innerHTML = '';
+      if (!extensions.length) {
+        remarkExtensionsContainer.innerHTML = '<p class="empty-state">No extensions</p>';
+        return;
+      }
+      extensions.forEach((ext) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn ghost-btn';
+        btn.textContent = ext.name;
+        btn.style.fontSize = '0.9rem';
+        btn.dataset.id = ext._id;
+        btn.addEventListener('click', () => {
+          // Toggle active
+          Array.from(remarkExtensionsContainer.children).forEach(c => c.classList && c.classList.remove('active-ext'));
+          btn.classList.add('active-ext');
+          remarkSelectedExtension = ext._id;
+          loadRemarkCustomers(ext._id);
+        });
+        remarkExtensionsContainer.appendChild(btn);
+      });
+    } catch (err) {
+      console.error(err);
+      remarkExtensionsContainer.innerHTML = '<p class="empty-state">Could not load extensions</p>';
+    }
+  }
+
+  async function loadRemarkCustomers(extensionId) {
+    if (!extensionId) {
+      remarkCustomersList.innerHTML = '<p class="empty-state">Select an extension to view its customers.</p>';
+      return;
+    }
+
+    remarkCustomersList.innerHTML = '<p class="empty-state">Loading customers...</p>';
+    try {
+      const res = await fetch(`/api/customers/extension/${extensionId}`);
+      if (!res.ok) throw new Error('Failed to fetch customers');
+      const customers = await res.json();
+
+      if (!customers.length) {
+        remarkCustomersList.innerHTML = '<p class="empty-state">No customers in this extension.</p>';
+        return;
+      }
+
+      // Render list
+      remarkCustomersList.innerHTML = '';
+      customers.forEach((c) => {
+        const row = document.createElement('div');
+        row.className = 'remark-row';
+        row.style.borderBottom = '1px solid var(--border-subtle)';
+        row.style.padding = '0.8rem 0';
+        row.style.display = 'flex';
+        row.style.alignItems = 'flex-start';
+        row.style.gap = '0.8rem';
+
+        const info = document.createElement('div');
+        info.style.flex = '1';
+        info.innerHTML = `<div style="font-weight:600">${(c.name || 'Unnamed')}</div>
+                          <div style="font-size:0.9rem; color:var(--text-muted)">Phone: ${c.phone || '—'}</div>
+                          <div style="font-size:0.9rem; color:var(--text-muted)">Address: ${c.address || '—'}</div>`;
+
+        const remarkContainer = document.createElement('div');
+        remarkContainer.style.width = '360px';
+        remarkContainer.style.display = 'flex';
+        remarkContainer.style.flexDirection = 'column';
+        remarkContainer.style.gap = '0.4rem';
+
+        const textarea = document.createElement('textarea');
+        textarea.value = c.remark || '';
+        textarea.placeholder = 'Write remarks about this customer...';
+        textarea.rows = 3;
+        textarea.style.width = '100%';
+        textarea.style.padding = '0.5rem';
+        textarea.style.border = '1px solid var(--border-subtle)';
+        textarea.style.borderRadius = '8px';
+
+        const actions = document.createElement('div');
+        actions.style.display = 'flex';
+        actions.style.justifyContent = 'flex-end';
+        actions.style.gap = '0.5rem';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn primary-btn';
+        saveBtn.textContent = 'Save Remark';
+        saveBtn.style.fontSize = '0.85rem';
+        saveBtn.addEventListener('click', async () => {
+          saveBtn.disabled = true;
+          const text = textarea.value;
+          try {
+            const res = await fetch(`/api/customers/${c._id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ remark: text })
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.error || 'Save failed');
+            }
+            showToast('Remark saved');
+          } catch (err) {
+            console.error(err);
+            showToast(err.message || 'Could not save remark', 'error');
+          } finally {
+            saveBtn.disabled = false;
+          }
+        });
+
+        actions.appendChild(saveBtn);
+        remarkContainer.appendChild(textarea);
+        remarkContainer.appendChild(actions);
+
+        row.appendChild(info);
+        row.appendChild(remarkContainer);
+
+        remarkCustomersList.appendChild(row);
+      });
+    } catch (err) {
+      console.error(err);
+      remarkCustomersList.innerHTML = '<p class="empty-state">Could not load customers</p>';
+    }
+  }
+
+  // Load remark extensions on dashboard init
+  loadRemarkExtensions();
 }
 
 // Extension page: Load extensions, customers, handle modals
@@ -945,10 +1080,9 @@ if (document.body.dataset.page === 'extension') {
                 const recent = milkMostRecentMap[c._id];
                 const cow = recent.cow || 0;
                 const buffalo = recent.buffalo || 0;
-                const productId = (recent.products && recent.products[0] && recent.products[0].productId) || null;
+                // Do NOT carry the product into a new day's entry. Reset product to null and quantity to 0.
                 try {
-                  const productQty = (recent.products && recent.products[0] && (recent.products[0].quantity || 0)) || 0;
-                  await saveMilkEntry(c._id, { date: todayISO, cow, buffalo, productId, productQuantity: productQty });
+                  await saveMilkEntry(c._id, { date: todayISO, cow, buffalo, productId: null, productQuantity: 0 });
                   return { customerId: c._id, ok: true };
                 } catch (err) {
                   return { customerId: c._id, ok: false, error: err.message };

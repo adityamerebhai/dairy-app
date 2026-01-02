@@ -109,7 +109,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, phone, address, extensionId, defaultProductId, defaultProductPermanent } = req.body;
+    const { name, phone, address, remark, extensionId, defaultProductId, defaultProductPermanent } = req.body;
 
     if (!isValidObjectId(id)) {
       return res.status(400).json({ error: 'Invalid customer id' });
@@ -131,7 +131,14 @@ router.put('/:id', async (req, res) => {
       }
     }
 
-    const updateFields = { name, phone, address, extensionId };
+    const updateFields = {};
+    // Only set fields that are provided to avoid overwriting with undefined
+    if (name !== undefined) updateFields.name = name;
+    if (phone !== undefined) updateFields.phone = phone;
+    if (address !== undefined) updateFields.address = address;
+    if (remark !== undefined) updateFields.remark = remark;
+    if (extensionId !== undefined) updateFields.extensionId = extensionId || null;
+
     if (defaultProductId !== undefined) updateFields.defaultProductId = defaultProductId || null;
     if (defaultProductPermanent !== undefined) updateFields.defaultProductPermanent = !!defaultProductPermanent;
 
