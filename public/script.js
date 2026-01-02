@@ -2243,81 +2243,85 @@ const extensionsPanel = document.getElementById('extensions-panel');
 const customersPanel = document.getElementById('customers-panel');
 const handle = document.getElementById('extension-handle');
 
-extensionSelect.addEventListener('change', () => {
-  if (!extensionSelect.value) return;
+if (extensionSelect) {
+  extensionSelect.addEventListener('change', () => {
+    if (!extensionSelect.value) return;
 
-  gsap.timeline()
-    .to(extensionsPanel, {
+    gsap.timeline()
+      .to(extensionsPanel, {
+        width: 0,
+        opacity: 0,
+        padding: 0,
+        duration: 0.6,
+        ease: "power3.inOut"
+      })
+      .to(customersPanel, {
+        flexGrow: 1,
+        duration: 0.6,
+        ease: "power3.inOut"
+      }, "<")
+      .to(handle, {
+        opacity: 1,
+        display: 'block',
+        duration: 0.3,
+        ease: "power2.out"
+      }, "-=0.2")
+      .set(extensionsPanel, { display: 'none' });
+  });
+}
+
+if (handle) {
+  handle.addEventListener('click', () => {
+    gsap.set(extensionsPanel, {
+      display: 'block',
       width: 0,
       opacity: 0,
-      padding: 0,
-      duration: 0.6,
-      ease: "power3.inOut"
-    })
-    .to(customersPanel, {
-      flexGrow: 1,
-      duration: 0.6,
-      ease: "power3.inOut"
-    }, "<")
-    .to(handle, {
-      opacity: 1,
-      display: 'block',
-      duration: 0.3,
-      ease: "power2.out"
-    }, "-=0.2")
-    .set(extensionsPanel, { display: 'none' });
-});
+      padding: 0
+    });
 
-
-
-handle.addEventListener('click', () => {
-  gsap.set(extensionsPanel, {
-    display: 'block',
-    width: 0,
-    opacity: 0,
-    padding: 0
+    gsap.timeline()
+      .to(handle, {
+        opacity: 0,
+        duration: 0.2
+      })
+      .to(extensionsPanel, {
+        width: '35%',
+        opacity: 1,
+        padding: '1rem',
+        duration: 0.6,
+        ease: "power3.out"
+      })
+      .to(customersPanel, {
+        flexGrow: 1,
+        duration: 0.6,
+        ease: "power3.out"
+      }, "<")
+      .set(handle, { display: 'none' });
   });
-
-  gsap.timeline()
-    .to(handle, {
-      opacity: 0,
-      duration: 0.2
-    })
-    .to(extensionsPanel, {
-      width: '35%',
-      opacity: 1,
-      padding: '1rem',
-      duration: 0.6,
-      ease: "power3.out"
-    })
-    .to(customersPanel, {
-      flexGrow: 1,
-      duration: 0.6,
-      ease: "power3.out"
-    }, "<")
-    .set(handle, { display: 'none' });
-});
-
+}
 
 const container = document.querySelector('.container');
 
-extensionSelect.addEventListener('change', () => {
-  if (!extensionSelect.value) return;
+if (extensionSelect) {
+  extensionSelect.addEventListener('change', () => {
+    if (!extensionSelect.value) return;
 
-  gsap.timeline({
-    defaults: { duration: 0.6, ease: "power3.inOut" },
-    onComplete: () => {
-      container.classList.add('full-width');
-      handle.style.display = 'block';
-    }
-  })
-  .to(extensionsPanel, {
-    flexBasis: 0,
-    opacity: 0
-  })
-  .to(customersPanel, {
-    flexGrow: 1
-  }, "<");
+    gsap.timeline({
+      defaults: { duration: 0.6, ease: "power3.inOut" },
+      onComplete: () => {
+        container.classList.add('full-width');
+        if (handle) handle.style.display = 'block';
+      }
+    })
+    .to(extensionsPanel, {
+      flexBasis: 0,
+      opacity: 0
+    })
+    .to(customersPanel, {
+      flexGrow: 1
+    }, "<");
+  });
+}
 });
 
 
