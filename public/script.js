@@ -779,7 +779,14 @@ if (document.body.dataset.page === 'dashboard') {
         btn.className = 'btn ghost-btn';
         btn.textContent = ext.name;
         btn.style.fontSize = '0.9rem';
+        btn.style.padding = '0.45rem 0.8rem';
+        btn.style.borderRadius = '999px';
+        btn.style.border = '1px solid rgba(209,213,219,0.9)';
+        btn.style.color = 'var(--text-main)';
+        btn.style.background = 'transparent';
         btn.dataset.id = ext._id;
+        btn.setAttribute('type', 'button');
+        btn.setAttribute('aria-pressed', 'false');
         btn.addEventListener('click', () => {
           // Toggle active: if already active, deselect
           const wasActive = btn.classList.contains('active-ext');
@@ -798,6 +805,7 @@ if (document.body.dataset.page === 'dashboard') {
 
           // Select new extension
           btn.classList.add('active-ext');
+          btn.setAttribute('aria-pressed', 'true');
           remarkSelectedExtension = ext._id;
           // Show search when an extension is selected
           if (remarkCustomerSearchInput) {
