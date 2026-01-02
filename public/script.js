@@ -847,8 +847,8 @@ if (document.body.dataset.page === 'extension') {
     }
   }
 
-  // Load customers for selected extension
-  async function loadCustomers() {
+  // Load customers for selected extension (supports using cached list and filtering by search)
+  async function loadCustomers(useCache = false) {
     if (!currentExtensionId) {
       customerList.innerHTML = '';
       noExtensionSelected.style.display = 'block';
@@ -857,13 +857,30 @@ if (document.body.dataset.page === 'extension') {
     }
 
     try {
-      const res = await fetch(`/api/customers/extension/${currentExtensionId}`);
-      if (!res.ok) throw new Error('Failed to fetch customers');
-      const customers = await res.json();
+      let customers;
+      if (useCache && lastLoadedAllCustomers && lastLoadedAllCustomers.length) {
+        customers = lastLoadedAllCustomers;
+      } else {
+        const res = await fetch(`/api/customers/extension/${currentExtensionId}`);
+        if (!res.ok) throw new Error('Failed to fetch customers');
+        customers = await res.json();
+        lastLoadedAllCustomers = customers;
+      }
+
+      // Apply search filter (searches name, address, phone)
+      const query = (customerSearchInput?.value || '').trim().toLowerCase();
+      const filteredCustomers = query
+        ? customers.filter((c) => {
+            const name = (c.name || '').toLowerCase();
+            const addr = (c.address || '').toLowerCase();
+            const phone = (c.phone || '').toLowerCase();
+            return name.includes(query) || addr.includes(query) || phone.includes(query);
+          })
+        : customers;
 
       customerList.innerHTML = '';
-      if (customers.length === 0) {
-        noExtensionSelected.textContent = 'No customers in this extension.';
+      if (filteredCustomers.length === 0) {
+        noExtensionSelected.textContent = query ? 'No customers match your search.' : 'No customers in this extension.';
         noExtensionSelected.style.display = 'block';
         return;
       }
@@ -874,8 +891,8 @@ if (document.body.dataset.page === 'extension') {
       today.setHours(0, 0, 0, 0);
       const todayISO = today.toISOString().split('T')[0];
 
-      // Fetch today's milk entries for all customers in parallel
-      const milkEntriesPromises = customers.map(async (customer) => {
+      // Fetch today's milk entries only for filtered customers (reduces network usage)
+      const milkEntriesPromises = filteredCustomers.map(async (customer) => {
         try {
           const entriesRes = await fetch(`/api/milk-entries/customer/${customer._id}`);
           if (entriesRes.ok) {
@@ -886,10 +903,7 @@ if (document.body.dataset.page === 'extension') {
               entryDate.setHours(0, 0, 0, 0);
               return entryDate.getTime() === today.getTime();
             });
-            // If no today's entry, get the most recent one
-            const mostRecent = entries.length > 0 
-              ? entries.sort((a, b) => new Date(b.date) - new Date(a.date))[0]
-              : null;
+            const mostRecent = entries.length > 0 ? entries.sort((a, b) => new Date(b.date) - new Date(a.date))[0] : null;
             return { customerId: customer._id, todayEntry: todayEntry || null, mostRecent };
           }
         } catch (err) {
@@ -906,8 +920,7 @@ if (document.body.dataset.page === 'extension') {
         milkMostRecentMap[customerId] = mostRecent;
       });
 
-      // Carry-forward: if today's entry doesn't exist, and we have a mostRecent from before today,
-      // create today's entry automatically (run once per extension per day)
+      // Carry-forward: run against the complete customers list (not filtered) to keep behaviour identical
       try {
         const lastCarryKey = `carryForward:${currentExtensionId}`;
         const lastCarry = localStorage.getItem(lastCarryKey);
@@ -925,7 +938,6 @@ if (document.body.dataset.page === 'extension') {
           });
 
           if (toCarry.length > 0) {
-            // Perform saves in parallel
             const carryResults = await Promise.allSettled(
               toCarry.map(async (c) => {
                 const recent = milkMostRecentMap[c._id];
@@ -947,14 +959,13 @@ if (document.body.dataset.page === 'extension') {
 
             if (successCount > 0) {
               showToast(`Carried forward ${successCount} entries for today`);
-              // mark as done for today
               localStorage.setItem(lastCarryKey, todayISO);
             }
             if (failCount > 0) {
               console.error('Some carry-forward operations failed', carryResults);
               showToast(`${failCount} entries failed to carry forward`, 'error');
             }
-            // Refresh the milkEntriesMap after carry-forward so UI renders today's entries
+
             const refreshedPromises = toCarry.map(async (c) => {
               const res = await fetch(`/api/milk-entries/customer/${c._id}`);
               if (res.ok) {
@@ -969,7 +980,6 @@ if (document.body.dataset.page === 'extension') {
             });
             await Promise.all(refreshedPromises);
           } else {
-            // still mark as done to avoid repeated checks when no carry needed
             localStorage.setItem(lastCarryKey, todayISO);
           }
         }
@@ -977,7 +987,8 @@ if (document.body.dataset.page === 'extension') {
         console.error('Carry-forward error:', err);
       }
 
-      customers.forEach((customer) => {
+      // Render only filtered customers
+      filteredCustomers.forEach((customer) => {
         const todayEntry = milkEntriesMap[customer._id];
         const li = document.createElement('li');
         li.className = 'item-row';
@@ -1418,6 +1429,9 @@ if (document.body.dataset.page === 'extension') {
   if (extensionSelect) {
     extensionSelect.addEventListener('change', (e) => {
       currentExtensionId = e.target.value || null;
+      // Clear search on extension change
+      if (customerSearchInput) customerSearchInput.value = '';
+
       // Show/hide "Save All Invoices" and "Print All Invoices" buttons based on extension selection
       if (saveAllInvoicesBtn) {
         saveAllInvoicesBtn.style.display = currentExtensionId ? 'block' : 'none';
@@ -1435,6 +1449,12 @@ if (document.body.dataset.page === 'extension') {
 
       loadCustomers();
     });
+  }
+
+  // Hook up search input (debounced) to filter customers client-side
+  if (customerSearchInput) {
+    const onSearch = debounce(() => loadCustomers(true), 250);
+    customerSearchInput.addEventListener('input', onSearch);
   }
 
 
