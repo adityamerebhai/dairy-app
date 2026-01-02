@@ -2322,7 +2322,6 @@ if (extensionSelect) {
     }, "<");
   });
 }
-});
 
 
 handle.addEventListener('click', () => {
