@@ -762,7 +762,7 @@ if (document.body.dataset.page === 'extension') {
   const extensionNameInput = document.getElementById('extension-name-input');
   const addExtensionBtn = document.getElementById('add-extension-btn');
   const extensionSelect = document.getElementById('extension-select');
-  const refreshCustomersBtn = document.getElementById('refresh-customers-btn');
+  const deleteExtensionBtn = document.getElementById('delete-extension-btn');
   const addCustomerBtn = document.getElementById('add-customer-btn');
   const saveAllInvoicesBtn = document.getElementById('save-all-invoices-btn');
   const customerModal = document.getElementById('customer-modal-backdrop');
@@ -1404,6 +1404,7 @@ if (document.body.dataset.page === 'extension') {
         if (newExt) {
           extensionSelect.value = newExt._id;
           currentExtensionId = newExt._id;
+          if (deleteExtensionBtn) { deleteExtensionBtn.style.display = 'inline-block'; deleteExtensionBtn.disabled = false; }
           loadCustomers();
         }
       } catch (err) {
@@ -1425,16 +1426,61 @@ if (document.body.dataset.page === 'extension') {
       if (printBtn) {
         printBtn.style.display = currentExtensionId ? 'inline-block' : 'none';
       }
+
+      // Toggle delete button visibility based on selection
+      if (deleteExtensionBtn) {
+        deleteExtensionBtn.style.display = currentExtensionId ? 'inline-block' : 'none';
+        deleteExtensionBtn.disabled = !currentExtensionId;
+      }
+
       loadCustomers();
     });
   }
 
 
 
-  // Refresh customers button
-  if (refreshCustomersBtn) {
-    refreshCustomersBtn.addEventListener('click', () => {
-      loadCustomers();
+  // Delete extension button (replaces Refresh Customers)
+  if (deleteExtensionBtn) {
+    deleteExtensionBtn.addEventListener('click', async () => {
+      if (!currentExtensionId) {
+        showToast('Please select an extension first', 'error');
+        return;
+      }
+
+      const selectedOpt = extensionSelect.querySelector(`option[value="${currentExtensionId}"]`);
+      const name = selectedOpt ? selectedOpt.textContent : 'this extension';
+
+      const confirmed = await showConfirm({
+        title: 'Delete extension',
+        message: `Are you sure you want to delete the extension "${name}" and all its customers and milk entries? This action cannot be undone.`,
+        okText: 'Delete',
+        cancelText: 'Cancel'
+      });
+
+      if (!confirmed) return;
+
+      setButtonLoading(deleteExtensionBtn, true);
+      try {
+        const res = await fetch(`/api/extensions/${currentExtensionId}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Delete failed');
+
+        showToast('Extension deleted');
+        // Reset selection and reload extensions/customers
+        extensionSelect.value = '';
+        currentExtensionId = null;
+        if (saveAllInvoicesBtn) saveAllInvoicesBtn.style.display = 'none';
+        const printBtn = document.getElementById('print-extension-invoices-btn');
+        if (printBtn) printBtn.style.display = 'none';
+        if (deleteExtensionBtn) { deleteExtensionBtn.style.display = 'none'; deleteExtensionBtn.disabled = true; }
+        await loadExtensions();
+        await loadCustomers();
+      } catch (err) {
+        console.error('Delete extension error:', err);
+        showToast(err.message || 'Could not delete extension', 'error');
+      } finally {
+        setButtonLoading(deleteExtensionBtn, false);
+      }
     });
   }
 
