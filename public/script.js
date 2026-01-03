@@ -1203,7 +1203,10 @@ if (document.body.dataset.page === 'extension') {
 
         const nameDiv = document.createElement('div');
         nameDiv.className = 'item-title';
-        nameDiv.textContent = customer.name || 'Unnamed Customer';
+        // Show name with phone and address as: name | phone | address
+        const safePhone = (customer.phone || '').replace(/\s+/g, ' ').trim();
+        const safeAddress = (customer.address || '').replace(/\s+/g, ' ').trim();
+        nameDiv.textContent = `${customer.name || 'Unnamed Customer'} | ${safePhone} | ${safeAddress}`;
 
         const inputsDiv = document.createElement('div');
         inputsDiv.style.display = 'flex';
