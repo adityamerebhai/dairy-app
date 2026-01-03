@@ -1051,6 +1051,7 @@ if (document.body.dataset.page === 'extension') {
 
   // Load customers for selected extension (supports using cached list and filtering by search)
   async function loadCustomers(useCache = false) {
+    updateCustomersHeading();
     if (!currentExtensionId) {
       customerList.innerHTML = '';
       noExtensionSelected.style.display = 'block';
@@ -1620,6 +1621,7 @@ if (document.body.dataset.page === 'extension') {
           extensionSelect.value = newExt._id;
           currentExtensionId = newExt._id;
           if (deleteExtensionBtn) { deleteExtensionBtn.style.display = 'inline-block'; deleteExtensionBtn.disabled = false; }
+          updateCustomersHeading();
           loadCustomers();
         }
       } catch (err) {
@@ -1633,6 +1635,7 @@ if (document.body.dataset.page === 'extension') {
   if (extensionSelect) {
     extensionSelect.addEventListener('change', (e) => {
       currentExtensionId = e.target.value || null;
+      updateCustomersHeading();
       // Clear search on extension change
       if (customerSearchInput) customerSearchInput.value = '';
 
@@ -2244,7 +2247,22 @@ if (document.body.dataset.page === 'invoice') {
 const extensionSelect = document.getElementById('extension-select');
 const extensionsPanel = document.getElementById('extensions-panel');
 const customersPanel = document.getElementById('customers-panel');
+const customersHeading = document.getElementById('customers-heading');
 const handle = document.getElementById('extension-handle');
+
+/**
+ * Update the customers panel heading to include the selected extension's name.
+ */
+function updateCustomersHeading() {
+  if (!customersHeading) return;
+  if (!currentExtensionId) {
+    customersHeading.textContent = 'Customers in Extension';
+    return;
+  }
+  const selectedOpt = extensionSelect ? extensionSelect.querySelector(`option[value="${currentExtensionId}"]`) : null;
+  const name = selectedOpt ? selectedOpt.textContent : 'Selected extension';
+  customersHeading.textContent = `Customers in ${name}`;
+} 
 
 if (extensionSelect) {
   extensionSelect.addEventListener('change', () => {
