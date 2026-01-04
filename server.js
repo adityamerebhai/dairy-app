@@ -22,14 +22,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve top-level images folder so <img src="/images/..."> works when images are stored outside `public`
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
-// Routes
-app.use('/api/extensions', require('./routes/extensions'));
-app.use('/api/customers', require('./routes/customers'));
-app.use('/api/milk-entries', require('./routes/milkEntries'));
-app.use('/api/items', require('./routes/items'));
-app.use('/api/products', require('./routes/products'));
-app.use('/api/milk-prices', require('./routes/milkPrices'));
-app.use('/test', require('./routes/test')); // test route
+// Routes (wrapped with a helper so missing route files won't crash the server)
+function safeUseRoute(routePath, modulePath) {
+  try {
+    const mod = require(modulePath);
+    app.use(routePath, mod);
+  } catch (err) {
+    // Print a helpful warning so deploy logs show which route did not load
+    console.warn(`Route not loaded: ${modulePath} -> ${err && err.message ? err.message : err}`);
+  }
+}
+
+safeUseRoute('/api/extensions', './routes/extensions');
+safeUseRoute('/api/customers', './routes/customers');
+safeUseRoute('/api/milk-entries', './routes/milkEntries');
+safeUseRoute('/api/items', './routes/items');
+safeUseRoute('/api/products', './routes/products');
+safeUseRoute('/api/milk-prices', './routes/milkPrices');
+// Optional test route (kept for manual triggers)
+safeUseRoute('/test', './routes/test');
 
 // Health check
 app.get('/api/health', (req, res) => {
