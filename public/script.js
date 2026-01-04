@@ -1115,13 +1115,19 @@ if (document.body.dataset.page === 'extension') {
           const entriesRes = await fetch(`/api/milk-entries/customer/${customer._id}`);
           if (entriesRes.ok) {
             const entries = await entriesRes.json();
-            // Find today's entry and the most recent entry
+            // Find today's entry and the most recent entry BEFORE today
             const todayEntry = entries.find((e) => {
               const entryDate = new Date(e.date);
               entryDate.setHours(0, 0, 0, 0);
               return entryDate.getTime() === today.getTime();
             });
-            const mostRecent = entries.length > 0 ? entries.sort((a, b) => new Date(b.date) - new Date(a.date))[0] : null;
+            // Find most recent entry strictly before today (so we don't use today's zero entry)
+            const prevEntries = entries.filter((e) => {
+              const entryDate = new Date(e.date);
+              entryDate.setHours(0, 0, 0, 0);
+              return entryDate.getTime() < today.getTime();
+            });
+            const mostRecent = prevEntries.length > 0 ? prevEntries.sort((a, b) => new Date(b.date) - new Date(a.date))[0] : null;
             return { customerId: customer._id, todayEntry: todayEntry || null, mostRecent };
           }
         } catch (err) {
@@ -1148,10 +1154,13 @@ if (document.body.dataset.page === 'extension') {
           const toCarry = customers.filter((c) => {
             const tEntry = milkEntriesMap[c._id];
             const mRecent = milkMostRecentMap[c._id];
-            if (tEntry) return false; // already has today's entry
+            // Skip if no previous entry to carry
             if (!mRecent) return false;
             const recentDate = new Date(mRecent.date);
             recentDate.setHours(0,0,0,0);
+            // If today's entry exists with non-zero values, skip (user already filled it)
+            if (tEntry && ((tEntry.cow || 0) !== 0 || (tEntry.buffalo || 0) !== 0)) return false;
+            // Only carry-forward when the most recent entry is from before today
             return recentDate.getTime() < today.getTime();
           });
 
