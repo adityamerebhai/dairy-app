@@ -475,8 +475,14 @@ router.get('/stats/daily-sales', async (req, res) => {
     // Group by date and calculate sales
     const dailySalesMap = new Map();
 
+    // Helper: produce local YYYY-MM-DD key (uses server's local timezone)
+    function localDateKey(d) {
+      const date = new Date(d);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
     entries.forEach((entry) => {
-      const dateKey = entry.date ? new Date(entry.date).toISOString().split('T')[0] : null;
+      const dateKey = entry.date ? localDateKey(entry.date) : null;
       if (!dateKey) return;
 
       const cow = entry.cow || 0;

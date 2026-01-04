@@ -2,6 +2,12 @@
 const pageType = document.body.dataset.page || 'general';
 const API_BASE = pageType === 'invoice' ? '/api/milk-entries' : '/api/items';
 
+// Local date helper returning YYYY-MM-DD in the browser's local timezone
+function localDateISO(date = new Date()) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const form = document.getElementById('item-form');
 const itemList = document.getElementById('item-list');
 const emptyState = document.getElementById('empty-state');
@@ -1002,7 +1008,7 @@ if (document.body.dataset.page === 'extension') {
 
   // Save a milk entry for a customer (used by save button, autosave and save-all)
   async function saveMilkEntry(customerId, { date = null, cow = 0, buffalo = 0, productId = null, productQuantity = 0 } = {}) {
-    const today = date || new Date().toISOString().split('T')[0];
+    const today = date || localDateISO();
     const payload = { date: today, cow, buffalo, productId, productQuantity };
 
     const res = await fetch(`/api/milk-entries/customer/${customerId}`, {
@@ -1107,7 +1113,7 @@ if (document.body.dataset.page === 'extension') {
       // Get today's date for fetching milk entries
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayISO = today.toISOString().split('T')[0];
+      const todayISO = localDateISO(today);
 
       // Fetch today's milk entries only for filtered customers (reduces network usage)
       const milkEntriesPromises = filteredCustomers.map(async (customer) => {
@@ -1148,7 +1154,7 @@ if (document.body.dataset.page === 'extension') {
       try {
         const lastCarryKey = `carryForward:${currentExtensionId}`;
         const lastCarry = localStorage.getItem(lastCarryKey);
-        const todayISO = today.toISOString().split('T')[0];
+        const todayISO = localDateISO(today);
 
         if (currentExtensionId && lastCarry !== todayISO) {
           const toCarry = customers.filter((c) => {
@@ -1872,7 +1878,7 @@ if (document.body.dataset.page === 'extension') {
         showToast('Please select an extension first', 'error');
         return;
       }
-      const todayISO = new Date().toISOString().split('T')[0];
+      const todayISO = localDateISO();
       window.location.href = `invoice.html?extensionId=${currentExtensionId}&date=${todayISO}`;
     });
   }
@@ -2101,7 +2107,7 @@ if (document.body.dataset.page === 'invoice') {
       }
 
       extNameEl.textContent = extensionName;
-      extDateEl.textContent = dateISO || new Date().toISOString().split('T')[0];
+      extDateEl.textContent = dateISO || localDateISO();
 
       // Fetch customers for extension
       const custRes = await fetch(`/api/customers/extension/${extensionId}`);
@@ -2119,7 +2125,7 @@ if (document.body.dataset.page === 'invoice') {
       }
 
       // For each customer fetch their milk entries and pick the entry for dateISO (or today if not provided)
-      const targetDate = dateISO || new Date().toISOString().split('T')[0];
+      const targetDate = dateISO || localDateISO();
 
       // Ensure milk prices loaded
       await loadMilkPrices();
@@ -2130,7 +2136,7 @@ if (document.body.dataset.page === 'invoice') {
           if (!res.ok) return { customer: c, entry: null };
           const entries = await res.json();
           const entry = entries.find((e) => {
-            const d = new Date(e.date).toISOString().split('T')[0];
+            const d = localDateISO(e.date);
             return d === targetDate;
           }) || null;
           return { customer: c, entry };
@@ -2258,7 +2264,7 @@ if (document.body.dataset.page === 'invoice') {
 
   // If extension mode requested, load extension invoices
   if (extensionIdFromQuery) {
-    const targetDate = dateFromQuery || new Date().toISOString().split('T')[0];
+    const targetDate = dateFromQuery || localDateISO();
     loadExtensionInvoices(extensionIdFromQuery, targetDate);
   } else {
     // Ensure compact class removed when not in extension mode
