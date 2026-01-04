@@ -61,6 +61,28 @@ mongoose
       await archiveAndReset();
     });
 
+    // Daily carry-forward job: copies last known cow & buffalo to today's entry for customers
+    // If you want to disable this behavior, set DISABLE_DAILY_CARRY=true in your env
+    if (!process.env.DISABLE_DAILY_CARRY) {
+      try {
+        const dailyCarryForward = require('./jobs/dailyCarryForward');
+        const carryCron = process.env.DAILY_CARRY_CRON || '0 0 * * *'; // default: midnight server time
+        cron.schedule(carryCron, async () => {
+          console.log('Running daily carry-forward job...');
+          try {
+            const summary = await dailyCarryForward({ timezone: process.env.TZ });
+            console.log('Daily carry-forward summary:', summary);
+          } catch (err) {
+            console.error('Daily carry-forward job failed:', err && err.message ? err.message : err);
+          }
+        });
+      } catch (err) {
+        console.warn('Daily carry-forward job not loaded:', err && err.message ? err.message : err);
+      }
+    } else {
+      console.log('Daily carry-forward job is disabled via DISABLE_DAILY_CARRY=true');
+    }
+
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
